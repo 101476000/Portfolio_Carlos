@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Carlos Figuera La Riva - Mobile Application Developer specializing in React Native, iOS, and accessible healthcare solutions">
+    <title>Carlos Figuera La Riva | Mobile Developer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="cursor-follower" id="cursorFollower"></div>
+    
+    <nav class="nav" id="mainNav">
+        <div class="nav-container">
+            <a href="#home" class="logo">
+                <span class="logo-text">CF</span>
+                <span class="logo-dot"></span>
+            </a>
+            <div class="nav-links">
+                <a href="#about" class="nav-link">About</a>
+                <a href="#work" class="nav-link">Work</a>
+                <a href="#skills" class="nav-link">Skills</a>
+                <a href="#contact" class="nav-link">Contact</a>
+                <a href="documents/resume.pdf" class="nav-link nav-cta" download>Resume</a>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <section id="home" class="hero">
+        <div class="hero-bg">
+            <div class="grid-overlay"></div>
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>Available for opportunities</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="title-line">Carlos Figuera La Riva</span>
+                    <span class="title-gradient">Full Stack Developer</span>
+                </h1>
+                <p class="hero-description">
+                    Building accessible, human-centered applications that bridge technology and impact. 
+                    Specialized in React Native, iOS development, and healthcare solutions.
+                </p>
+                <div class="hero-actions">
+                    <a href="#work" class="btn btn-primary">
+                        <span>View Projects</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M4 10h12m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </a>
+                    <a href="#contact" class="btn btn-secondary">
+                        <span>Get in Touch</span>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-value">3+</div>
+                        <div class="stat-label">Years Learning</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">15+</div>
+                        <div class="stat-label">Projects</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">Degrees</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <div class="scroll-line"></div>
+            <span>Scroll</span>
+        </div>
+    </section>
+
+    <section id="about" class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Who I Am</span>
+                <h2 class="section-title">About Me</h2>
+            </div>
+            <div class="about-grid">
+                <div class="about-text">
+                    <div class="text-block">
+                        <h3>Background</h3>
+                        <p>
+                            I bring a unique perspective to Full Stack development, combining business strategy, 
+                            design thinking, and technical implementation. With a Master's in Design and a 
+                            Bachelor's in Business Administration, I approach development holistically.
+                        </p>
+                    </div>
+                    <div class="text-block">
+                        <h3>Current Focus</h3>
+                        <p>
+                            Completing my Advanced Diploma in Computer Programming and Analysis at George Brown 
+                            College (T177), I specialize in React Native and iOS development. My capstone 
+                            project, MoviCare, addresses critical healthcare challenges through accessible 
+                            technology for seniors and caregivers.
+                        </p>
+                    </div>
+                    <div class="text-block">
+                        <h3>Philosophy</h3>
+                        <blockquote>
+                            "We are the facilitators of our own creative evolution."
+                        </blockquote>
+                        <p>
+                            I believe technology should empower, not complicate. My work focuses on creating 
+                            solutions that are intuitive, accessible, and genuinely improve lives—particularly 
+                            in healthcare where design decisions have real human impact.
+                        </p>
+                    </div>
+                </div>
+                <div class="about-highlights">
+                    <div class="highlight-card">
+                        <div class="card-icon">🎓</div>
+                        <h4>Education</h4>
+                        <ul>
+                            <li>Mobile App Development (T177)</li>
+                            <li>Master's in Design</li>
+                            <li>BA Business Administration</li>
+                        </ul>
+                    </div>
+                    <div class="highlight-card">
+                        <div class="card-icon">💼</div>
+                        <h4>Expertise</h4>
+                        <ul>
+                            <li>React Native & Expo</li>
+                            <li>iOS Development</li>
+                            <li>Full-Stack JavaScript</li>
+                            <li>UX/Accessibility</li>
+                        </ul>
+                    </div>
+                    <div class="highlight-card">
+                        <div class="card-icon">🌍</div>
+                        <h4>Languages</h4>
+                        <ul>
+                            <li>English (Fluent)</li>
+                            <li>Spanish (Native)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="work" class="section section-dark">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Featured Work</span>
+                <h2 class="section-title">Projects</h2>
+            </div>
+            
+            <div class="project-featured">
+                <div class="project-visual">
+                    <div class="project-mockup">
+                        <div class="mockup-screen">
+                            <div class="app-header">
+                                <div class="status-bar"></div>
+                                <div class="app-title">MoviCare</div>
+                            </div>
+                            <div class="app-content">
+                                <div class="health-card"></div>
+                                <div class="health-card"></div>
+                                <div class="emergency-btn"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-info">
+                    <span class="project-tag">Capstone Project</span>
+                    <h3 class="project-title">MoviCare</h3>
+                    <p class="project-description">
+                        A comprehensive mobile application bridging the care gap between seniors and their 
+                        support network. Features real-time health monitoring, emergency alerts, medication 
+                        management, and location-based check-ins.
+                    </p>
+                    <div class="project-tech">
+                        <span>React Native</span>
+                        <span>Expo Router</span>
+                        <span>Firebase</span>
+                        <span>TypeScript</span>
+                        <span>Firestore</span>
+                    </div>
+                    <div class="project-features">
+                        <div class="feature">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span>Role-based authentication system</span>
+                        </div>
+                        <div class="feature">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span>Real-time health metrics tracking</span>
+                        </div>
+                        <div class="feature">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span>Emergency alert with location sharing</span>
+                        </div>
+                    </div>
+                    <div class="project-links">
+                        <a href="documents/movicare-requirements.pdf" class="project-link" download>
+                            Requirements
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 2v8m0 0l3-3m-3 3L5 7m9 7H2" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </a>
+                        <a href="documents/movicare-design.pdf" class="project-link" download>
+                            Architecture
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 2v8m0 0l3-3m-3 3L5 7m9 7H2" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </a>
+                        <a href="documents/movicare-status-report.pdf" class="project-link" download>
+                            Status Report
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 2v8m0 0l3-3m-3 3L5 7m9 7H2" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="card-header">
+                        <h4>Real-Time Chat</h4>
+                        <span class="card-tag">Full-Stack</span>
+                    </div>
+                    <p>WebSocket-based messaging with Socket.io, Express, and MongoDB. Features authentication, private messaging, and group chats.</p>
+                    <div class="card-tech">
+                        <span>Node.js</span>
+                        <span>Socket.io</span>
+                        <span>MongoDB</span>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="card-header">
+                        <h4>iOS Calculator</h4>
+                        <span class="card-tag">iOS</span>
+                    </div>
+                    <p>Native iOS calculator built with SwiftUI, demonstrating advanced state management and custom UI components.</p>
+                    <div class="card-tech">
+                        <span>Swift</span>
+                        <span>SwiftUI</span>
+                        <span>UIKit</span>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="card-header">
+                        <h4>ML Predictive Models</h4>
+                        <span class="card-tag">Data Science</span>
+                    </div>
+                    <p>Neural networks for automotive fuel efficiency prediction and IMDB sentiment analysis using TensorFlow.</p>
+                    <div class="card-tech">
+                        <span>Python</span>
+                        <span>TensorFlow</span>
+                        <span>Pandas</span>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="card-header">
+                        <h4>Restaurant API</h4>
+                        <span class="card-tag">Backend</span>
+                    </div>
+                    <p>RESTful API with comprehensive data validation, error handling, and CRUD operations using Mongoose.</p>
+                    <div class="card-tech">
+                        <span>Express</span>
+                        <span>MongoDB</span>
+                        <span>REST</span>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="card-header">
+                        <h4>Security Audit</h4>
+                        <span class="card-tag">Cybersecurity</span>
+                    </div>
+                    <p>Network reconnaissance and security auditing using nmap, traceroute, and SSH configuration hardening.</p>
+                    <div class="card-tech">
+                        <span>Linux</span>
+                        <span>Network Security</span>
+                        <span>SSH</span>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="card-header">
+                        <h4>Microservices</h4>
+                        <span class="card-tag">Architecture</span>
+                    </div>
+                    <p>Fault-tolerant microservices with circuit breaker patterns demonstrating scalable architecture principles.</p>
+                    <div class="card-tech">
+                        <span>Node.js</span>
+                        <span>Microservices</span>
+                        <span>Patterns</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="skills" class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Technical Expertise</span>
+                <h2 class="section-title">Skills & Technologies</h2>
+            </div>
+            <div class="skills-grid">
+                <div class="skill-group">
+                    <h3>Mobile Development</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">React Native</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 90%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Expo / Expo Router</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">iOS (Swift, SwiftUI)</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 75%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">React Navigation</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-group">
+                    <h3>Full-Stack Development</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">JavaScript / TypeScript</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 90%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Node.js / Express</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">MongoDB / Mongoose</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 80%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">RESTful APIs</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-group">
+                    <h3>Backend & Cloud</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Firebase / Firestore</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 88%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Authentication & Security</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 82%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Real-time Data Sync</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Push Notifications</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 80%"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-group">
+                    <h3>Design & UX</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">UI/UX Design</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 92%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Accessibility (WCAG)</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Design Systems</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 80%"></div></div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Prototyping</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 88%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section section-dark">
+        <div class="container">
+            <div class="contact-content">
+                <div class="contact-text">
+                    <span class="section-label">Get In Touch</span>
+                    <h2 class="section-title">Let's Connect</h2>
+                    <p class="contact-description">
+                        I'm currently seeking opportunities in mobile development. Whether you have a 
+                        project in mind, want to discuss technology, or just want to connect, I'd love 
+                        to hear from you.
+                    </p>
+                    <div class="contact-info">
+                        <div class="info-item">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M10 10a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M10 17.5c4.142 0 7.5-3.358 7.5-7.5S14.142 2.5 10 2.5 2.5 5.858 2.5 10s3.358 7.5 7.5 7.5z" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            <span>Toronto, Ontario, Canada</span>
+                        </div>
+                        <div class="info-item">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M2.5 6.667C2.5 5.747 3.247 5 4.167 5h11.666c.92 0 1.667.746 1.667 1.667v6.666c0 .92-.746 1.667-1.667 1.667H4.167c-.92 0-1.667-.746-1.667-1.667V6.667z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M2.5 6.667l7.5 5 7.5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <a href="mailto:101476000@georgebrown.ca">101476000@georgebrown.ca</a>
+                        </div>
+                        <div class="info-item">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M17.5 3.333v13.334a1.667 1.667 0 01-1.667 1.666H4.167A1.667 1.667 0 012.5 16.667V3.333A1.667 1.667 0 014.167 1.667h11.666A1.667 1.667 0 0117.5 3.333zM5.833 7.5h8.334M5.833 10.833h8.334M5.833 14.167h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <a href="documents/resume.pdf" download>Download Resume</a>
+                        </div>
+                    </div>
+                    <div class="social-links">
+                        <a href="#" class="social-link" title="LinkedIn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="currentColor"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" title="GitHub">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" fill="currentColor"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <form class="contact-form" id="contactForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <span>Send Message</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M17.5 2.5L8.75 11.25M17.5 2.5L12.5 17.5l-3.75-6.25L2.5 7.5l15-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-text">
+                    <p>&copy; 2026 Carlos Figuera La Riva. All rights reserved.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="documents/resume.pdf" download>Resume</a>
+                    <a href="#about">About</a>
+                    <a href="#work">Projects</a>
+                    <a href="#contact">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

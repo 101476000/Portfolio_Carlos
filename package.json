@@ -1,0 +1,19 @@
+{
+  "name": "carlos-figuera-portfolio",
+  "version": "1.0.0",
+  "description": "Professional portfolio for Carlos Figuera La Riva - Mobile Application Developer",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "portfolio",
+    "mobile-development",
+    "react-native",
+    "ios",
+    "full-stack"
+  ],
+  "author": "Carlos Figuera La Riva",
+  "license": "MIT"
+}
