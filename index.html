@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Carlos Figuera La Riva - Mobile Application Developer specializing in React Native, iOS, and accessible healthcare solutions">
-    <title>Carlos Figuera La Riva | Full Stack Developer</title>
+    <title>Carlos Figuera La Riva | Mobile Developer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -568,10 +568,41 @@ body {
 }
 
 .health-card {
-    height: 60px;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.card-header-mini {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-icon-mini {
+    font-size: 1rem;
+}
+
+.card-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.card-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.card-meta {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
 }
 
 .emergency-btn {
@@ -580,6 +611,20 @@ body {
     border-radius: 25px;
     margin-top: auto;
     box-shadow: var(--shadow-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.emergency-icon {
+    font-size: 1.25rem;
+}
+
+.emergency-text {
+    font-weight: 600;
+    color: white;
+    font-size: 0.9rem;
 }
 
 .project-tag {
@@ -1119,7 +1164,7 @@ body {
                         <h3>Current Focus</h3>
                         <p>
                             Completing my Advanced Diploma in Computer Programming and Analysis at George Brown 
-                            College, I specialize in React Native and iOS development. My capstone 
+                            College (T177), I specialize in React Native and iOS development. My capstone 
                             project, MoviCare, addresses critical healthcare challenges through accessible 
                             technology for seniors and caregivers.
                         </p>
@@ -1185,9 +1230,26 @@ body {
                                 <div class="app-title">MoviCare</div>
                             </div>
                             <div class="app-content">
-                                <div class="health-card"></div>
-                                <div class="health-card"></div>
-                                <div class="emergency-btn"></div>
+                                <div class="health-card">
+                                    <div class="card-header-mini">
+                                        <span class="card-icon-mini">❤️</span>
+                                        <span class="card-label">Blood Pressure</span>
+                                    </div>
+                                    <div class="card-value">120/80</div>
+                                    <div class="card-meta">mmHg · 2 hours ago</div>
+                                </div>
+                                <div class="health-card">
+                                    <div class="card-header-mini">
+                                        <span class="card-icon-mini">📍</span>
+                                        <span class="card-label">Last Check-in</span>
+                                    </div>
+                                    <div class="card-value">Home</div>
+                                    <div class="card-meta">Toronto, ON · 30 min ago</div>
+                                </div>
+                                <div class="emergency-btn">
+                                    <span class="emergency-icon">🚨</span>
+                                    <span class="emergency-text">Emergency Alert</span>
+                                </div>
                             </div>
                         </div>
                     </div>
