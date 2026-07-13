@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Edit(docs/**)",
+      "Edit(services/**)",
+      "Edit(integrations/**)",
+      "Edit(core/twenty/twenty-apps/**)",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(pnpm *)",
+      "Bash(npx create-twenty-app*)"
+    ],
+    "deny": [
+      "Edit(core/twenty/**)",
+      "!Edit(core/twenty/twenty-apps/**)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)"
+    ],
+    "ask": [
+      "Edit(services/accounting-service/**)",
+      "Edit(services/customs-service/**)",
+      "Edit(integrations/carm-cbsa/**)",
+      "Edit(integrations/ace-cbp/**)",
+      "Bash(*deploy*)",
+      "Bash(*migrate*production*)"
+    ]
+  },
+  "notes": [
+    "Este archivo refleja las restricciones descritas en CLAUDE.md.",
+    "El bloque 'deny' sobre core/twenty/** protege el código fuente de Twenty de ediciones directas — ver restricción #1 en CLAUDE.md.",
+    "El bloque 'ask' fuerza confirmación humana explícita en accounting, customs, y despliegues — ver restricción #3 en CLAUDE.md.",
+    "Ajustar rutas conforme se cree la estructura real de carpetas en Fase 1."
+  ]
+}
