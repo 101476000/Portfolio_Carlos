@@ -8,7 +8,7 @@ su dependencia. Ver columna "Depende de".
 
 | # | Fase | Estado | Depende de | Agente puede trabajar solo | Notas |
 |---|------|--------|------------|------------------------------|-------|
-| 1 | Arquitectura, Twenty Analysis, DDD, Multi-tenant, Legal | 🔲 No iniciada | — | Sí (documentación) | Bloquea TODO lo demás |
+| 1 | Arquitectura, Twenty Analysis, DDD, Multi-tenant, Legal | 🟢 Cerrada | — | Sí (documentación) | Ver `docs/phases/01-architecture.md`. ADR-002 resuelto. Desbloquea Fases 2-5 |
 | 2 | CRM | 🔲 No iniciada | Fase 1 | Sí | Extiende objetos nativos de Twenty |
 | 3 | Customers | 🔲 No iniciada | Fase 1, 2 | Sí | |
 | 4 | Sales | 🔲 No iniciada | Fase 1, 2, 3 | Sí | |
@@ -41,4 +41,10 @@ cuanto antes porque tienen tiempos de calendario largos:
 
 ## Próximo paso
 
-Fase 1 no iniciada. Es la única fase sin bloqueos — puede arrancar de inmediato.
+Fase 1 cerrada (documentación de arquitectura, análisis de Twenty, DDD y multi-tenant en
+`docs/phases/01-architecture.md`; ADR-002 resuelto). Fases 2-4 (CRM/Customers/Sales) y Fase 5
+(Shipment) ya no están bloqueadas y pueden avanzar en paralelo, ya que ambas dependen solo de
+Fase 1 — ver orden recomendado en `README.md`.
+
+Pendiente en paralelo (no bloquea desarrollo): ADR-001 (licencia comercial con Twenty.com)
+sigue sin resolución humana — solo bloquea Fase 14 en producción con clientes reales.
