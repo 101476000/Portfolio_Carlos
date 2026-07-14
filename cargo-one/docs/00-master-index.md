@@ -16,7 +16,7 @@ su dependencia. Ver columna "Depende de".
 | 6 | Ocean | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/06-ocean.md`, extiende Fase 5 sin tocarla |
 | 7 | Air | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/07-air.md`, mismo patrón que Fase 6 |
 | 8 | Ground | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/08-ground.md` (sin tabla de `CargoUnit` — no hace falta) |
-| 9 | Warehouse | 🔲 No iniciada | Fase 5 | Sí | |
+| 9 | Warehouse | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/09-warehouse.md`; servicio propio (`warehouse-service`), no extiende `shipment-service` |
 | 10 | Accounting | 🔲 No iniciada | Fase 1, 5 | **No — checkpoint humano obligatorio** | Dinero real |
 | 11 | Documents (incluye Integrations Hub) | 🔲 No iniciada | Fase 1 | Parcial — checkpoint en conectores de aduana | CARM/ACE requieren registro externo primero |
 | 12 | AI Platform | 🔲 No iniciada | Fase 1, 11 | Sí | |
@@ -80,9 +80,20 @@ transporte) queda especificado como una unidad consistente — Fases 5-8 compart
 revisión humana pendiente antes de que se escriba código real (ver "Notas para el agente" de
 cada una).
 
-Siguiente candidata natural: Fase 9 (Warehouse), la última que depende únicamente de Fase 5
-antes de entrar a fases con checkpoint humano obligatorio (Accounting, Fase 10) o
-dependencias externas (Documents/Customs, Fase 11).
+Fase 9 (Warehouse) también tiene su modelo de datos completo (`docs/phases/09-warehouse.md`):
+a diferencia de Fases 6-8, no extiende `shipment-service` — es su propio servicio satélite
+(`services/warehouse-service`, base de datos propia), con relación bidireccional a `Shipment`
+(downstream y upstream, tal como anticipaba `docs/phases/01-architecture.md`). Documenta el
+evento `warehouse.outbound.released` como segundo origen posible de creación de `Shipment`
+(junto a `quotation.accepted` de Fase 4), sin implementar la automatización — se dejó
+explícitamente para que el negocio confirme cuándo un shipment implica almacenaje antes de
+inferirlo del modelo.
+
+Con Fase 9 especificada, todas las fases que dependen únicamente de Fase 1/5 y no tienen
+checkpoint humano obligatorio ni dependencia externa están cubiertas. Lo que sigue
+(Fase 10 — Accounting, Fase 11 — Documents/Customs) entra a territorio con checkpoint humano
+obligatorio o registro externo (CBSA/CBP) — conviene tratarlas con más cuidado, no en el
+mismo modo de "especificar en cadena" usado hasta acá.
 
 Pendiente en paralelo (no bloquea desarrollo): ADR-001 (licencia comercial con Twenty.com)
 sigue sin resolución humana — solo bloquea Fase 14 en producción con clientes reales.
