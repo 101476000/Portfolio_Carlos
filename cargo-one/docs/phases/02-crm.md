@@ -1,10 +1,11 @@
 # Fase 2 — CRM
 
-**Estado:** 🟡 En curso — work order especificado, `sales-extensions-app` escafoldado en
-`core/twenty-apps/sales-extensions-app/`. Implementación real pendiente: falta `yarn install`
-(bloqueado en este sandbox por red) y una instancia de Twenty corriendo vía Docker (daemon no
-disponible en este sandbox). Ver `docs/decisions/003-twenty-apps-scaffolding.md` y
-`core/twenty-apps/README.md`.
+**Estado:** 🟡 En curso — **bloqueante de infraestructura resuelto**: `sales-extensions-app`
+tiene `yarn install` completo y está conectado (`remote:add`, auth por API key válida) a una
+instancia real de Twenty self-hosted (VPS de desarrollo, Fase 14). Falta implementar los
+campos/objetos de la tabla de alcance como código y sincronizarlos — eso es lo único que
+queda para cerrar esta fase. Ver `docs/decisions/003-twenty-apps-scaffolding.md`,
+`docs/phases/14-deployment.md`, y `core/twenty-apps/README.md`.
 
 ## Contexto
 
@@ -88,11 +89,13 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
 ## Criterios de aceptación
 
 - [x] `sales-extensions-app` creado vía `npx create-twenty-app` (scaffold base).
-- [ ] `yarn install` completado y `yarn twenty dev`/`yarn twenty remote:add` conectado a una
-      instancia real de Twenty — **bloqueante para el resto de esta lista**; ver
-      `core/twenty-apps/README.md` para el estado exacto del bloqueo y los comandos.
+- [x] `yarn install` completado y `yarn twenty remote:add` conectado a una instancia real de
+      Twenty self-hosted (`remote:status` → `Auth: api-key (valid)`) — verificado en el VPS de
+      desarrollo (Fase 14), no en el sandbox de agente donde se especificó originalmente.
 - [ ] Campos/objeto de la tabla de alcance definidos como código dentro de
-      `sales-extensions-app` y sincronizados contra esa instancia.
+      `sales-extensions-app` (usar `yarn twenty dev:add <entityType>` para escafoldar cada
+      objeto/campo, luego `yarn twenty plan`/`apply` para sincronizar contra el remote) —
+      **este es el único criterio pendiente para cerrar la fase.**
 - [ ] Nombres de API en `snake_case` inglés, labels en Title Case inglés (convención de
       `CLAUDE.md`).
 - [ ] `Trade Lane` expuesto correctamente en GraphQL/REST (verificado con una consulta de
@@ -107,15 +110,21 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
 ## Notas para el agente
 
 - **No hay checkpoint humano obligatorio** para esta fase (ver `docs/00-master-index.md`).
-- **Bloqueante real (actualizado):** ya no es "clonar Twenty" — se determinó (ADR-003) que
-  eso ni siquiera es necesario. El bloqueante real es (1) `yarn install` en
-  `sales-extensions-app`, que falló en este sandbox porque corepack no puede descargar el
-  binario de `yarn@4.13.0` a través del proxy saliente del entorno, y (2) no hay Docker
-  daemon disponible en este sandbox para levantar un Twenty local (`yarn twenty dev`) o
-  conectar a uno self-hosted. Una sesión futura con red completa y Docker debe correr
-  `yarn install` y luego `yarn twenty dev` / `yarn twenty remote:add` desde
-  `core/twenty-apps/sales-extensions-app/` antes de poder ejecutar el resto de los criterios
-  de aceptación. Hasta entonces, esta fase queda en 🟡 — no marcar 🟢 sin instancia real.
+- **Bloqueante de infraestructura: resuelto.** El sandbox de agente nunca pudo completar
+  `yarn install` (corepack bloqueado por el proxy de red) ni tenía Docker disponible — se
+  resolvió aprovisionando un VPS real (Hostinger, ver Fase 14) donde sí hay red completa y
+  Docker corriendo. `sales-extensions-app` ya corrió `yarn install` ahí y está conectado
+  (`remote:add --as production`) a la instancia real self-hosted con una API key válida.
+  Sesiones futuras que trabajen esta fase deben operar sobre ese VPS (vía SSH o el terminal
+  del panel de Hostinger), no asumir que hace falta repetir el diagnóstico de infraestructura.
+- **Comandos reales del CLI `twenty`** (confirmados con `yarn twenty --help` contra la
+  versión instalada, no asumidos de memoria): `dev:add <entityType>` para escafoldar un
+  objeto/campo nuevo (tipos válidos: `object|field|logicFunction|frontComponent|role|skill|
+  agent|connectionProvider|view|viewField|navigationMenuItem|pageLayout|pageLayoutTab|
+  commandMenuItem`), `plan` para previsualizar el cambio de metadata antes de aplicarlo, y
+  `apply` para aplicarlo contra el remote activo. `remote:add` NO acepta un flag
+  `--authentication-method` (error real encontrado en esta sesión) — solo `--as`, `--url`,
+  `--api-key`, `--local`.
 - No se toca `packages/twenty-server` ni `packages/twenty-front` bajo ninguna circunstancia
   (regla 1 de `CLAUDE.md`) — todo lo de esta fase pasa por `sales-extensions-app`.
 - Bounded context involucrado: **CRM & Sales** (porción CRM). Antes de empezar, confirmar

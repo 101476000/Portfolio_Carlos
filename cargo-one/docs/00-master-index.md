@@ -9,7 +9,7 @@ su dependencia. Ver columna "Depende de".
 | # | Fase | Estado | Depende de | Agente puede trabajar solo | Notas |
 |---|------|--------|------------|------------------------------|-------|
 | 1 | Arquitectura, Twenty Analysis, DDD, Multi-tenant, Legal | 🟢 Cerrada | — | Sí (documentación) | Ver `docs/phases/01-architecture.md`. ADR-002 resuelto. Desbloquea Fases 2-5 |
-| 2 | CRM | 🟡 En curso | Fase 1 | Sí | Spec lista, app `sales-extensions-app` escafoldada. Falta `yarn install` + Docker — ver ADR-003 |
+| 2 | CRM | 🟡 En curso | Fase 1 | Sí | `sales-extensions-app` con `yarn install` + `remote:add` verificados contra Twenty real (VPS, Fase 14). Falta implementar los campos/objetos como código |
 | 3 | Customers | 🟡 En curso | Fase 1, 2 | Sí | Spec lista en `docs/phases/03-customers.md`. Mismo bloqueante que Fase 2 |
 | 4 | Sales | 🟡 En curso | Fase 1, 2, 3 | Sí | Spec lista, app `quotation-app` escafoldada. Mismo bloqueante que Fase 2/3 |
 | 5 | Shipment | 🟡 En curso | Fase 1 | Sí (con revisión de modelo de datos) | Modelo de datos listo en `docs/phases/05-shipment.md`; `services/shipment-service` sin código todavía |
