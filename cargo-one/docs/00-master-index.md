@@ -11,7 +11,7 @@ su dependencia. Ver columna "Depende de".
 | 1 | Arquitectura, Twenty Analysis, DDD, Multi-tenant, Legal | 🟢 Cerrada | — | Sí (documentación) | Ver `docs/phases/01-architecture.md`. ADR-002 resuelto. Desbloquea Fases 2-5 |
 | 2 | CRM | 🟡 En curso | Fase 1 | Sí | Spec lista, app `sales-extensions-app` escafoldada. Falta `yarn install` + Docker — ver ADR-003 |
 | 3 | Customers | 🟡 En curso | Fase 1, 2 | Sí | Spec lista en `docs/phases/03-customers.md`. Mismo bloqueante que Fase 2 |
-| 4 | Sales | 🔲 No iniciada | Fase 1, 2, 3 | Sí | |
+| 4 | Sales | 🟡 En curso | Fase 1, 2, 3 | Sí | Spec lista, app `quotation-app` escafoldada. Mismo bloqueante que Fase 2/3 |
 | 5 | Shipment | 🔲 No iniciada | Fase 1 | Sí (con revisión de modelo de datos) | Núcleo del dominio logístico |
 | 6 | Ocean | 🔲 No iniciada | Fase 5 | Sí | |
 | 7 | Air | 🔲 No iniciada | Fase 5 | Sí | |
@@ -53,8 +53,16 @@ campos/objetos custom reales y cerrar los criterios de aceptación de cada fase.
 `cargo-one/core/twenty-apps/README.md` para los comandos exactos que debe correr Carlos en
 una máquina con Docker y red completa.
 
-Fase 4 (Sales) puede especificarse en paralelo (depende de Fase 1-3, cuyas specs ya existen),
-igual que Fase 5 (Shipment), que solo depende de Fase 1.
+Fase 4 (Sales) también tiene su work order completo (`docs/phases/04-sales.md`): define
+`Quotation`/`QuotationLine` sobre `quotation-app`, enlazado a `Opportunity` nativo de Twenty y
+reutilizando `Trade Lane`/`incoterm` de Fases 2-3, con el contrato de evento
+`quotation.accepted` documentado (no implementado — no hay consumidor hasta Fase 5). Con esto,
+las tres porciones del bounded context CRM & Sales (Fases 2, 3, 4) quedan completamente
+especificadas y consistentes entre sí, todas en 🟡 por el mismo bloqueante de infraestructura.
+
+Fase 5 (Shipment) puede especificarse en paralelo — solo depende de Fase 1, cuya spec ya
+existe — y es la siguiente candidata natural: es el núcleo del dominio logístico y el
+consumidor real del evento `quotation.accepted` que Fase 4 dejó documentado.
 
 Pendiente en paralelo (no bloquea desarrollo): ADR-001 (licencia comercial con Twenty.com)
 sigue sin resolución humana — solo bloquea Fase 14 en producción con clientes reales.
