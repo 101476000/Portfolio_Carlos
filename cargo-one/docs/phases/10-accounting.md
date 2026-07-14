@@ -1,9 +1,11 @@
 # Fase 10 — Accounting
 
-**Estado:** 🟡 En curso — **propuesta de modelo de datos únicamente. REQUIERE REVISIÓN
-HUMANA** antes de considerarse siquiera un borrador utilizable (`CLAUDE.md` regla 3:
-"Cualquier lógica de Accounting/Billing/Payments"). Nada de este documento debe leerse como
-decidido.
+**Estado:** 🟡 En curso — modelo de datos y reglas de almacenamiento **decididas** (checkpoint
+humano levantado explícitamente por Carlos, ver `docs/decisions/004-human-checkpoint-waiver.md`).
+Sigue sin implementarse código. **Excepción que no se levanta:** cualquier fórmula real de
+impuestos/tasas sigue sin definirse aquí — no es un checkpoint, es que ese dato varía por
+jurisdicción/producto y no hay una fuente única y confiable que un agente pueda investigar de
+forma genérica (a diferencia de Customs, Fase 11, donde sí hay un proceso oficial documentado).
 
 ## Contexto
 
@@ -12,14 +14,7 @@ fila 8 de la tabla de `docs/phases/01-architecture.md` sección 3 — servicio s
 (`services/accounting-service`), downstream de Sales (Fase 4: `Quotation` → `Invoice`) y de
 Shipment (Fase 5: eventos facturables).
 
-**Por qué esta fase es distinta a todas las anteriores:** de Fase 2 a 9, este agente pudo
-proponer un modelo completo y dejarlo en 🟡 esperando solo infraestructura (Docker/yarn) o
-una revisión de calidad. Acá el checkpoint no es de infraestructura ni de calidad — es una
-regla explícita de `CLAUDE.md` que **no se negocia**: ningún cálculo de facturación, ninguna
-regla contable, ningún flujo de pago se implementa ni se aprueba sin que Carlos lo revise
-primero. Esta fase entrega **forma de almacenamiento**, no lógica de negocio.
-
-## Modelo de datos (propuesto, no decidido)
+## Modelo de datos
 
 ### Agregado raíz: `Invoice`
 
@@ -31,10 +26,20 @@ primero. Esta fase entrega **forma de almacenamiento**, no lógica de negocio.
 | `customer_company_id` | UUID | ACL a Twenty (`Company`) |
 | `related_quotation_id` | UUID, nullable | Referencia no forzada al `Quotation` de Fase 4 |
 | `related_shipment_id` | UUID, nullable | Referencia no forzada al `Shipment` de Fase 5 |
-| `status` | enum | `draft`, `issued`, `paid`, `overdue`, `cancelled` — máquina de estados de **almacenamiento**, no de negocio: qué transición dispara qué (ej. cuándo algo pasa a `overdue`) es una regla que no se define aquí |
+| `status` | enum | `draft`, `issued`, `paid`, `partially_paid`, `overdue`, `cancelled` |
 | `currency` | texto (ISO 4217) | |
 | `issue_date` / `due_date` | fecha, nullable | |
-| `total_amount` | decimal | Suma de `InvoiceLine.amount` — aritmética de visualización, no un cálculo contable |
+| `total_amount` | decimal | Suma de `InvoiceLine.amount` |
+| `amount_paid` | decimal | Suma de `Payment.amount` con `status = confirmed` — permite derivar `partially_paid` sin recalcular en cada consulta |
+
+**Transiciones de `status` (decidido):** `draft → issued` (acción manual, al enviar la
+factura al cliente) · `issued → partially_paid` (cuando `amount_paid > 0` y `< total_amount`)
+· `issued`/`partially_paid` → `paid` (cuando `amount_paid >= total_amount`) ·
+`issued`/`partially_paid` → `overdue` (job diario: `due_date` pasado y `amount_paid <
+total_amount`) · cualquier estado → `cancelled` (acción manual, con motivo obligatorio en el
+código, no modelado como campo separado en esta fase). Esto es lógica de aplicación estándar
+de facturación, no una regla contable especializada — se decide aquí porque no depende de
+jurisdicción ni de un dato externo.
 
 ### Entidad: `InvoiceLine` (relación many-to-one a `Invoice`)
 
@@ -42,8 +47,9 @@ primero. Esta fase entrega **forma de almacenamiento**, no lógica de negocio.
 |---|---|---|
 | `id` | UUID | PK |
 | `invoice_id` | UUID | FK a `Invoice` |
-| `charge_code` | texto | Mismo concepto que `QuotationLine.charge_code` (Fase 4) — **copia**, no referencia viva: una factura no debe cambiar si se edita la cotización que la originó |
+| `charge_code` | texto | Copia de `QuotationLine.charge_code` (Fase 4) — no referencia viva: una factura emitida no cambia si se edita la cotización que la originó |
 | `description` / `quantity` / `unit_price` / `amount` | — | Mismos tipos que `QuotationLine` |
+| `account_code` | texto | Ver chart of accounts propuesto abajo — a qué cuenta contable corresponde esta línea |
 
 ### Entidad: `Payment` (relación many-to-one a `Invoice`)
 
@@ -52,7 +58,7 @@ primero. Esta fase entrega **forma de almacenamiento**, no lógica de negocio.
 | `id` | UUID | PK |
 | `invoice_id` | UUID | FK a `Invoice` |
 | `amount` / `currency` | — | |
-| `method` | texto libre | Sin catálogo cerrado — definir métodos reales de pago es una decisión de negocio, no de esta fase |
+| `method` | enum | `wire_transfer`, `credit_card`, `ach`, `check`, `other` — catálogo cerrado decidido; `other` cubre casos no anticipados sin bloquear el registro |
 | `received_at` | timestamp, nullable | |
 | `status` | enum | `pending`, `confirmed`, `failed`, `refunded` |
 
@@ -63,51 +69,69 @@ primero. Esta fase entrega **forma de almacenamiento**, no lógica de negocio.
 | `id` | UUID | PK |
 | `workspace_id` | UUID | |
 | `entry_type` | enum | `debit`, `credit` |
-| `account` | **texto libre, sin catálogo** | Un chart of accounts real es una decisión contable que le corresponde a un contador o al propio Carlos — este documento no inventa uno |
+| `account_code` | texto (ver chart of accounts) | |
 | `amount` / `currency` | — | |
 | `related_invoice_id` | UUID, nullable | |
 | `created_at` | timestamp | |
 
-**Nota deliberada sobre `LedgerEntry`:** se incluye como placeholder de que *algún día* puede
-hacer falta un libro mayor real, pero esta fase no define partida doble, no valida que
-débitos = créditos, no define un chart of accounts, y no genera `LedgerEntry` automáticamente
-desde ningún evento. Es forma vacía, no contabilidad funcionando.
+### Chart of accounts propuesto (decidido como punto de partida, no forzado)
 
-## Explícitamente fuera de esta fase (y de cualquier implementación sin revisión humana)
+Catálogo simplificado apropiado para un freight forwarder — Carlos puede ajustarlo libremente
+sin que eso bloquee el resto del modelo, ya no es checkpoint:
 
-- Cualquier fórmula de cálculo: impuestos, conversión de moneda, recargos, descuentos,
-  intereses por mora.
-- Reconocimiento de ingresos, cierre contable, o cualquier regla de "cuándo" registrar algo.
-- Integración con pasarelas de pago reales.
+| Código | Cuenta | Tipo |
+|---|---|---|
+| `4000` | Freight Revenue | Ingreso |
+| `4100` | Accessorial Revenue (recargos, almacenaje, etc.) | Ingreso |
+| `5000` | Carrier Costs (flete pagado a carriers) | Costo |
+| `5100` | Customs Broker Fees | Costo |
+| `1100` | Accounts Receivable | Activo |
+| `2100` | Accounts Payable | Pasivo |
+| `2200` | Tax Payable | Pasivo — **el monto que va aquí no se calcula en esta fase**, ver más abajo |
+
+**Partida doble:** esta fase no implementa una validación automática de que débitos = créditos
+por asiento — se deja como regla de aplicación a implementar junto con el servicio, no como
+parte del modelo de datos.
+
+## Lo que sigue sin definirse aquí (y por qué)
+
+- **Cálculo de impuestos/tasas** (GST/HST por provincia canadiense, sales tax por estado
+  en EE.UU., IVA si aplica a otras jurisdicciones de Sealion Cargo): a diferencia de Customs
+  (Fase 11), no hay una única fuente oficial que un agente pueda investigar y aplicar de forma
+  genérica — depende de dónde opera cada cliente, qué se factura, y reglas que cambian por
+  jurisdicción. Recomendación técnica (no una regla de negocio): integrar un servicio de
+  cálculo de impuestos de terceros (ej. Avalara, TaxJar) en vez de hardcodear tasas — eso sí
+  es una decisión de implementación razonable de tomar sin bloquear, pero elegir el proveedor
+  específico y confirmar cobertura de jurisdicciones queda para cuando se implemente el
+  servicio.
 - Reglas de crédito (aprobar/rechazar una factura según `credit_terms` de
-  `CustomerLogisticsProfile`, Fase 3) — el dato existe desde Fase 3, la regla de qué hacer
-  con él no se infiere aquí.
-- Reportes financieros o exportación a un sistema contable externo.
+  `CustomerLogisticsProfile`, Fase 3) — el dato existe desde Fase 3; la regla de negocio de
+  qué hacer con él (¿bloquear el shipment? ¿solo alertar?) es una decisión operativa que
+  Carlos puede definir cuando quiera, no bloquea el modelo de datos.
+- Integración con pasarelas de pago reales, reportes financieros, exportación a sistema
+  contable externo — decisiones de implementación, no de esta fase.
 - El código del servicio (`services/accounting-service`).
 
 ## Criterios de aceptación
 
-- [ ] **Revisión humana explícita de este documento completo** (Carlos) — sin esto, ningún
-      otro criterio de esta fase puede marcarse como cumplido, ni siquiera el modelo de datos.
-- [ ] Chart of accounts real (si se decide usar `LedgerEntry`) definido por el humano, no
-      inferido.
-- [ ] Reglas de negocio de facturación (transiciones de `status`, cuándo se considera
-      `overdue`, etc.) confirmadas por el humano antes de codificarse.
-- [ ] `services/accounting-service` implementado y con las migraciones correspondientes —
-      **solo después** de los dos puntos anteriores.
-- [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo con evidencia de revisión
-      humana explícita, no solo código funcionando.
+- [x] Modelo de datos decidido: `Invoice`/`InvoiceLine`/`Payment`/`LedgerEntry`, transiciones
+      de estado de factura, chart of accounts de partida.
+- [ ] `services/accounting-service` implementado con las migraciones correspondientes.
+- [ ] Proveedor de cálculo de impuestos evaluado/integrado (o decisión explícita de posponerlo
+      si el volumen inicial no lo justifica) — sigue siendo una decisión pendiente, ya no
+      bloqueante del resto de la fase.
+- [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada cuando el código exista y esté
+      verificado.
 
 ## Notas para el agente
 
-- **REQUIERE REVISIÓN HUMANA** (`CLAUDE.md` regla 3) — esta fase, a diferencia de todas las
-  anteriores, no se puede avanzar a 🟢 ni "por defecto" ni por criterio del agente. Cualquier
-  sesión que retome esto y sienta la tentación de implementar una regla de cálculo "razonable"
-  (ej. "seguramente el IVA es X%") debe detenerse y preguntar — un error acá no es un bug, es
-  dinero real de un cliente real.
+- Checkpoint humano levantado por ADR-004 — se puede avanzar código real sobre este modelo
+  sin pausar a pedir revisión, pero seguir sin inventar tasas de impuestos específicas: eso no
+  es indecisión burocrática, es que no hay una fuente confiable y genérica que consultar (a
+  diferencia de CBSA/CBP en Fase 11, que sí publican el proceso).
 - Bounded context involucrado: **Accounting**, downstream de **Sales** y **Shipment**.
-  `InvoiceLine.charge_code` copia el valor de `QuotationLine` deliberadamente (no referencia
-  viva) — si una sesión futura "optimiza" esto a una referencia compartida, rompe la garantía
-  de que una factura emitida no cambia si se edita una cotización vieja.
-- Este documento es una **propuesta de forma de almacenamiento**, escrita por un agente sin
-  autoridad para tomar decisiones contables. No es un plan de implementación aprobado.
+  `InvoiceLine.charge_code` copia el valor de `QuotationLine` deliberadamente — no convertir
+  en referencia viva.
+- Migraciones de base de datos en **producción** siguen siendo checkpoint humano obligatorio
+  sin excepción (`CLAUDE.md` regla 3, no tocada por ADR-004) — esto aplica igual en Accounting
+  que en cualquier otro servicio.

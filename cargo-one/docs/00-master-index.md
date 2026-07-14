@@ -17,10 +17,10 @@ su dependencia. Ver columna "Depende de".
 | 7 | Air | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/07-air.md`, mismo patrón que Fase 6 |
 | 8 | Ground | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/08-ground.md` (sin tabla de `CargoUnit` — no hace falta) |
 | 9 | Warehouse | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/09-warehouse.md`; servicio propio (`warehouse-service`), no extiende `shipment-service` |
-| 10 | Accounting | 🟡 En curso | Fase 1, 5 | **No — checkpoint humano obligatorio** | Propuesta de modelo en `docs/phases/10-accounting.md`, REQUIERE REVISIÓN HUMANA total, nada decidido |
-| 11 | Documents (incluye Integrations Hub) | 🟡 En curso | Fase 1 | Parcial — checkpoint en conectores de aduana | Modelo listo en `docs/phases/11-documents.md`; Documents + conectores genéricos sin checkpoint, `carm-cbsa`/`ace-cbp` sí (y requieren registro externo) |
+| 10 | Accounting | 🟡 En curso | Fase 1, 5 | Sí (checkpoint levantado, ADR-004) | Modelo y reglas decididos en `docs/phases/10-accounting.md`; cálculo de impuestos real sigue sin definir (no es checkpoint, es dato jurisdiccional) |
+| 11 | Documents (incluye Integrations Hub) | 🟡 En curso | Fase 1 | Sí, salvo transmisión real a aduana | Modelo listo, conectores de aduana investigados y fundamentados en fuentes oficiales (`docs/phases/11-documents.md`) — transmisión real sigue gateada por ley, no por este proyecto |
 | 12 | AI Platform | 🟡 En curso | Fase 1, 11 | Sí | Modelo listo en `docs/phases/12-ai-platform.md`; fija la regla de que checkpoints de `CLAUDE.md` aplican también a agentes de IA |
-| 13 | Security | 🟡 En curso | Fase 1 | **No — checkpoint humano obligatorio** | Checklist de áreas en `docs/phases/13-security.md`, sin decisiones tomadas — REQUIERE REVISIÓN HUMANA total |
+| 13 | Security | 🟡 En curso | Fase 1 | Sí (checkpoint levantado, ADR-004) | Decisiones tomadas en `docs/phases/13-security.md`; `.claude/settings.json` corregido en la misma sesión |
 | 14 | Deployment | 🟡 En curso | Fase 1 | Parcial | Topología de desarrollo/self-host propuesta en `docs/phases/14-deployment.md`; producción bloqueada por ADR-001 |
 | 15 | Testing | 🟡 En curso | Todas las anteriores relevantes | Sí | Estrategia por capa en `docs/phases/15-testing.md`; se aplica junto a cada fase de dominio, no al final |
 | 16 | Roadmap | 🟡 En curso | Todas | Sí (documentación) | Snapshot y orden de implementación en `docs/phases/16-roadmap.md` |
@@ -41,25 +41,34 @@ cuanto antes porque tienen tiempos de calendario largos:
 
 ## Próximo paso
 
-**Las 16 fases tienen su work order/modelo especificado.** Ninguna tiene código de servicio
-implementado todavía. Para la narrativa completa de qué falta y en qué orden conviene
-implementarlo, ver `docs/phases/16-roadmap.md` — este documento es la fuente de verdad del
-*estado* por fase (tabla de arriba), Fase 16 es la narrativa de *qué sigue*; se actualizan
-juntos, no por separado.
+**Las 16 fases tienen su work order/modelo especificado y decidido** (checkpoint humano de
+Accounting y Security levantado explícitamente por Carlos vía
+`docs/decisions/004-human-checkpoint-waiver.md`; conectores de aduana investigados y
+fundamentados en fuentes oficiales en vez de bloqueados — ver `docs/phases/11-documents.md`).
+Ninguna fase tiene código de servicio implementado todavía. Para la narrativa completa, ver
+`docs/phases/16-roadmap.md`.
 
-Resumen de los tres bloqueos más importantes ahora mismo:
+Bloqueos reales que quedan (ya no son de "falta revisión humana", son de infraestructura o de
+requisitos legales externos que ningún ADR de este repo puede levantar):
 
 1. **Infraestructura de desarrollo** (`core/twenty-apps/`): falta `yarn install` + Docker en
-   una máquina con red completa — ver `cargo-one/core/twenty-apps/README.md`. Bloquea pasar
-   de spec a código en Fases 2-4 y la porción genérica de Fase 11.
+   un entorno con red completa. Carlos indicó que no lo hará en su máquina local — pendiente
+   definir dónde (ej. un VPS de Hostinger u otro proveedor); requiere que una sesión de agente
+   tenga acceso (SSH u otro medio) a ese entorno para completarlo. Bloquea pasar de spec a
+   código en Fases 2-4 y la porción genérica de Fase 11.
 2. **Revisión humana del core domain** (Fases 5-9, `Shipment` + Ocean/Air/Ground/Warehouse):
-   ya tiene una autorevisión de agente aplicada (ver `docs/phases/05-shipment.md`), pero
-   sigue pendiente la revisión de Carlos antes de escribir migraciones reales.
-3. **Revisión humana total, sin excepción** (Fases 10 y 13 — Accounting y Security): estos
-   dos documentos son preguntas y propuestas de forma, no decisiones. No avanzar a código sin
-   que Carlos las resuelva explícitamente (documentadas como ADRs nuevas en
-   `docs/decisions/`).
+   sigue teniendo su propia recomendación de revisión (no un checkpoint de `CLAUDE.md`, sino
+   buena práctica dado que seis fases dependen de este modelo) — ya tiene una autorevisión de
+   agente aplicada (`docs/phases/05-shipment.md`).
+3. **Requisito legal externo, no checkpoint de proyecto** (Fase 11, conectores de aduana):
+   transmitir datos reales a CBSA/CARM o ACE/CBP requiere un customs broker licenciado con
+   delegación de autoridad — sigue pendiente que Carlos confirme si Sealion Cargo opera con
+   broker propio, partner, o planea licenciarse (pregunta de negocio, no técnica).
 
 Pendiente en paralelo (no bloquea desarrollo/documentación): ADR-001 (licencia comercial con
-Twenty.com) y el registro externo ante CBSA/CBP (Fase 11, conectores de aduana) — ambos son
-trámites de terceros con tiempos de calendario largos, vale la pena arrancarlos ya.
+Twenty.com) y el registro externo ante CBSA/CBP — ambos son trámites de terceros con tiempos
+de calendario largos, vale la pena arrancarlos ya.
+
+**Gap detectado en esta ronda:** `docs/phases/01-architecture.md` identifica **Customs** como
+bounded context propio (`CustomsDeclaration`), pero no tiene fase numerada dedicada — vive
+implícito dentro de Fase 11. Ver nota en `docs/phases/11-documents.md`.

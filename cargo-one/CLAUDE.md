@@ -32,19 +32,34 @@ de agente (que no tendrá memoria de esta) pueda retomar sin fricción.
    públicamente a clientes reales. Ver ese archivo antes de cualquier tarea de "deployment" o
    "release".
 
-3. **Checkpoints humanos obligatorios** — el agente puede escribir código, pero NO puede
-   mergear/aprobar/desplegar sin revisión humana explícita en:
-   - Cualquier cálculo de duties, taxes, o lógica de Commercial Accounting Declaration (CAD).
-   - Cualquier integración con CBSA/CARM, ACE/CBP, o cualquier sistema de aduanas.
-   - Cualquier lógica de Accounting/Billing/Payments.
-   - Migraciones de base de datos en producción.
-   En estos casos, el agente entrega el trabajo como propuesta (PR / diff) con una nota
-   explícita: "REQUIERE REVISIÓN HUMANA: [motivo]". Nunca marcar estas tareas como "done"
-   sin esa revisión.
+3. **Checkpoints humanos — alcance revisado por ADR-004 (2026-07-14).** El checkpoint
+   original de "detenerse y pedir revisión humana" para Accounting/Billing/Payments y para
+   Security fue **levantado explícitamente por Carlos** — ver
+   `docs/decisions/004-human-checkpoint-waiver.md`. El agente puede decidir y avanzar esas
+   fases sin pausar, dejando explícito qué decidió y por qué para revisión posterior, no
+   previa. Sigue habiendo checkpoint obligatorio (sin excepción) en:
+   - **Migraciones de base de datos en producción** — nunca se ejecutan sin revisión humana
+     explícita.
+   - **Cualquier clasificación arancelaria (HS code), valuación aduanera, o transmisión real
+     a CBSA/CARM o ACE/CBP** con datos de un embarque real — la especificación/diseño técnico
+     del conector (Fase 11) no requiere esto (ya se investigó y fundamentó con fuentes
+     oficiales), pero usarlo con datos reales sí, porque solo un customs broker licenciado con
+     delegación de autoridad puede presentar un CAD ante CBSA (ver
+     `docs/phases/11-documents.md`) y una clasificación incorrecta es una sanción real, no un
+     bug. Esto no es un checkpoint de este proyecto que se pueda levantar, es un requisito
+     legal externo — nota: CARM calcula el monto de duties/taxes automáticamente a partir de
+     los datos declarados, así que no hace falta una fórmula propia; el riesgo real está en la
+     clasificación/valuación que se declara, no en un cálculo que Cargo One tenga que hacer.
+   En estos dos casos, el agente entrega el trabajo como propuesta con una nota explícita:
+   "REQUIERE REVISIÓN HUMANA: [motivo]". Nunca marcar estas tareas como "done" sin esa revisión.
 
-4. **No inventes reglas de compliance aduanero.** Si necesitas una regla de negocio de CBSA/
-   CARM/CBP que no está documentada en `docs/decisions/`, pregunta al humano en vez de asumir.
-   Un error aquí no es un bug, es una sanción real para el cliente.
+4. **No inventes reglas de compliance aduanero — investígalas.** Si necesitas una regla de
+   negocio de CBSA/CARM/CBP que no está documentada en `docs/decisions/`, la vía es
+   **investigar la fuente oficial** (cbsa-asfc.gc.ca, cbp.gov, documentación técnica citada
+   por ellos) y fundamentar con cita — no inventar, y no simplemente detenerse a preguntar
+   como primera opción (ver ADR-004). Si la investigación no da una respuesta clara o hay
+   fuentes contradictorias, ahí sí se pregunta al humano. Un error aquí no es un bug, es una
+   sanción real para el cliente.
 
 ## Cómo está organizado el trabajo
 

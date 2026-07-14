@@ -1,10 +1,12 @@
 # Fase 11 — Documents e Integrations Hub
 
-**Estado:** 🟡 En curso — work order especificado. Checkpoint humano **parcial**: el pipeline
-de documentos y los conectores genéricos (Amazon SP-API, Wayfair) no requieren revisión
-obligatoria; los conectores de aduana (`carm-cbsa`, `ace-cbp`) **sí la requieren** en su
-totalidad (`CLAUDE.md` regla 3) y además dependen de registro externo (ver
-`docs/00-master-index.md`, sección "Dependencias externas").
+**Estado:** 🟡 En curso — work order especificado, incluyendo el **diseño** de los conectores
+de aduana fundamentado en fuentes oficiales (ver sección de investigación abajo; decisión de
+Carlos vía `docs/decisions/004-human-checkpoint-waiver.md`). Lo que sigue gateado, sin
+excepción, no es el diseño sino **transmitir datos reales**: eso requiere un customs broker
+licenciado con delegación de autoridad (requisito legal externo, no un checkpoint de este
+proyecto) y el registro externo ante CBSA/CBP (ver `docs/00-master-index.md`, "Dependencias
+externas").
 
 ## Contexto
 
@@ -90,22 +92,87 @@ agrupa `docs/00-master-index.md`):
 | `payload` | JSON | |
 | `occurred_at` | timestamp | |
 
+## Investigación: CBSA/CARM y CBP/ACE (fuentes oficiales)
+
+Hecha en esta sesión para fundamentar el diseño de los conectores sin inventar reglas
+(`CLAUDE.md` regla 4, vía ADR-004: investigar antes que preguntar). Resumen — ver fuentes al
+final de esta sección.
+
+**CBSA/CARM:**
+- CARM es, desde el 21 de octubre de 2024, el sistema oficial de registro para duties/taxes
+  de importaciones comerciales a Canadá.
+- El **CAD (Commercial Accounting Declaration)** reemplaza los formularios previos B3
+  (Customs Coding) y B2 (Request for Adjustment). Se presenta vía EDI o API dentro de los 5
+  días hábiles posteriores al release de la carga.
+- **CARM calcula duties/taxes automáticamente** a partir de los datos declarados en el CAD —
+  Cargo One no necesita (ni debe) implementar una fórmula de impuestos propia; el riesgo real
+  está en la exactitud de la clasificación arancelaria (HS code) y valuación que se declara,
+  no en un cálculo que hagamos nosotros.
+- **Solo un customs broker licenciado, con delegación de autoridad, puede presentar un CAD o
+  una corrección en nombre de un importador.** Esto es un requisito legal externo que
+  determina la arquitectura real del conector: `integrations/carm-cbsa` probablemente no es
+  "Cargo One habla directo con CBSA", sino "Cargo One envía datos estructurados a un broker
+  licenciado (propio de Sealion Cargo o un partner) que los presenta". **Pregunta de negocio
+  abierta, no técnica:** ¿Sealion Cargo opera con un broker in-house, un partner externo, o
+  planea licenciarse? Esto no lo puede decidir un agente — es la única parte de esta
+  investigación que sigue necesitando una respuesta de Carlos, porque es un dato de la
+  realidad del negocio, no algo que esté en una página oficial.
+- Registro: Trade Chain Partner vía CARM Client Portal, con seguridad financiera (bond RPP —
+  Release Prior to Payment). A partir del 1 de enero de 2026, el business number de un broker
+  ya no puede usarse para liberar/contabilizar carga en nombre de un importador — cada
+  importador necesita su propio registro.
+
+**CBP/ACE:**
+- CATAIR (CBP and Trade Automated Interface Requirements) es la especificación técnica para
+  transmitir datos a ACE vía ABI (Automated Broker Interface).
+- Participantes elegibles: customs brokers, importadores (auto-declarando su propia carga), o
+  ABI service bureaus.
+- Requiere un **ISA (Interconnection Security Agreement)** firmado con CBP para transmisión
+  directa/SFTP, y certificación técnica del sistema participante (testing conforme a la
+  Publication 552/CATAIR) antes de ir en vivo.
+
+**Fuentes:**
+- [CARM: Assess and pay duties and taxes on imported commercial goods](https://www.cbsa-asfc.gc.ca/services/carm-gcra/menu-eng.html) (cbsa-asfc.gc.ca)
+- [Get started with CARM](https://www.cbsa-asfc.gc.ca/services/carm-gcra/start-passer-eng.html) (cbsa-asfc.gc.ca)
+- [Commercial Accounting Declaration (CAD) — GHY International](https://www.ghy.com/carm/commercial-accounting-declaration-cad/)
+- [ACE Automated Broker Interface (ABI) / CATAIR — CBP](https://www.cbp.gov/trade/automated/catair)
+- [How to Use ACE — CBP](https://www.cbp.gov/trade/automated/how-to-use-ace)
+- [19 CFR Part 143 Subpart A — Automated Broker Interface](https://www.ecfr.gov/current/title-19/chapter-I/part-143/subpart-A)
+
+**Nota de honestidad sobre el alcance de esta investigación:** esto es una pasada de nivel
+"entender el proceso y las obligaciones", con fuentes citadas y verificables — no es lectura
+completa de las especificaciones técnicas EDI/API línea por línea (los layouts de mensaje
+reales de CATAIR son documentos de cientos de páginas). Antes de implementar el conector real,
+la sesión que lo haga debe leer la especificación técnica completa vigente en ese momento
+(las reglas cambian — ver el aviso de enero 2026 arriba, que ya cambió mientras se investigaba
+esto), no asumir que este resumen sigue vigente sin revalidar.
+
 ## Explícitamente fuera de esta fase
 
-- **Conectores `carm-cbsa` y `ace-cbp` reales** — el `Connector` con `provider = carm_cbsa` o
-  `ace_cbp` puede existir como registro (`status = pending_registration`), pero **ninguna
-  lógica de integración real, ningún mapeo de campos, ninguna llamada a esos sistemas** se
-  implementa sin: (1) el registro externo como Trade Chain Partner/proveedor EDI ante CBSA
-  (o el equivalente ACE/CBP) completado — ver `docs/00-master-index.md` — y (2) revisión
-  humana explícita, sin excepción (`CLAUDE.md` reglas 3 y 4). **REQUIERE REVISIÓN HUMANA.**
-- Reglas de negocio de qué campos mapear hacia/desde CBSA/CARM o ACE/CBP — no se inventan
-  (regla 4 de `CLAUDE.md`).
-- Elección de proveedor de OCR/clasificación/gestor de secretos — decisiones técnicas que se
-  toman al implementar, no se fuerzan en esta fase.
-- Cualquier lógica de aduana o cálculo de duties sobre los datos extraídos — Customs
-  (vive conceptualmente en esta misma fase 11 según el master index, pero su lógica de
-  cálculo es checkpoint humano obligatorio y no se aborda en este documento).
+- **Transmisión real de datos a `carm-cbsa`/`ace-cbp`** — el diseño del conector ya está
+  fundamentado (arriba), pero ninguna llamada real a esos sistemas se hace sin: (1) el
+  registro externo (Trade Chain Partner/CARM, ISA/CATAIR para ACE) completado, y (2) la
+  pregunta de negocio abierta (broker propio vs. partner vs. licenciarse) resuelta por Carlos
+  — esto no es un checkpoint del proyecto, es que la arquitectura del conector literalmente
+  depende de esa respuesta.
+- Clasificación arancelaria (HS code) o valuación aduanera de un embarque real — sigue
+  gateado por `CLAUDE.md` regla 3 (ver la corrección hecha en esta sesión), un error ahí es
+  una sanción real.
+- Elección de proveedor de OCR/clasificación de documentos — decisión técnica que se toma al
+  implementar, no se fuerza en esta fase.
 - El código de los servicios/conectores.
+
+## Nota: gap de alcance detectado (Customs como bounded context propio)
+
+`docs/phases/01-architecture.md` sección 3 identifica **Customs** como su propio bounded
+context (fila 7: `CustomsDeclaration`, `DutyCalculation`, `ComplianceDocument`, en
+`services/customs-service`) — distinto de Documents e Integrations Hub. Pero
+`docs/00-master-index.md` solo le da espacio implícito dentro de la Fase 11 ("Documents
+incluye Integrations Hub"), sin una fase numerada propia para el modelo de datos de
+`CustomsDeclaration` en sí (a diferencia de cómo Accounting sí tiene su Fase 10 dedicada).
+Esta sesión no lo resuelve — sería expandir el alcance más allá de lo que se pidió — pero lo
+deja anotado explícitamente para que una sesión futura decida si amerita una Fase 11.5/17 o
+si se absorbe formalmente dentro de Fase 11. Ver también `docs/phases/16-roadmap.md`.
 
 ## Criterios de aceptación
 
@@ -113,25 +180,36 @@ agrupa `docs/00-master-index.md`):
       definido con aprobación humana obligatoria antes de que el dato extraído se use en
       otro contexto.
 - [x] Modelo de `Connector`/`ConnectorCredential`/`IntegrationEvent` definido, con los
-      secretos explícitamente fuera del modelo (solo referencia).
+      secretos explícitamente fuera del modelo (solo referencia — mecanismo decidido en
+      Fase 13: variables de entorno, no un gestor de secretos dedicado todavía).
+- [x] Diseño de los conectores `carm-cbsa`/`ace-cbp` fundamentado en fuentes oficiales (ver
+      sección de investigación).
+- [ ] **Pregunta de negocio abierta:** ¿Sealion Cargo opera con broker propio, partner, o
+      planea licenciarse? — respuesta de Carlos, necesaria para terminar de definir la
+      arquitectura exacta de `carm-cbsa`/`ace-cbp` (a quién le habla el conector realmente).
 - [ ] `services/document-pipeline-service` implementado y verificado.
 - [ ] Conectores `amazon-sp-api` y `wayfair-api` implementados siguiendo el patrón "thin
       connector" (`integrations/shared/connector-interface.ts` en `PROJECT_STRUCTURE.md`).
-- [ ] Conectores `carm-cbsa`/`ace-cbp`: **no avanzar sin (a) registro externo confirmado y
-      (b) revisión humana explícita** — ver `docs/00-master-index.md`.
+- [ ] Conectores `carm-cbsa`/`ace-cbp`: código real solo tras (a) registro externo confirmado
+      y (b) la pregunta de negocio de arriba resuelta — no requiere ya una revisión humana
+      adicional del diseño en sí, eso ya se investigó y quedó documentado.
 - [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo para la porción Documents +
       conectores genéricos; los conectores de aduana pueden quedar 🟡/⛔ indefinidamente sin
       que eso bloquee cerrar el resto de esta fase.
 
 ## Notas para el agente
 
-- Esta fase mezcla dos niveles de riesgo distintos en un solo documento (igual que
-  `docs/00-master-index.md` los agrupa en una fila): Documents y los conectores genéricos son
-  trabajo normal de agente; los conectores de aduana son checkpoint humano obligatorio y
-  dependencia externa combinados — no tratar toda la fase con el mismo nivel de autonomía.
+- El diseño de los conectores de aduana ya no requiere pausar a pedir revisión humana
+  (ADR-004) — sí requiere, antes de escribir código real, resolver la pregunta de negocio
+  abierta (broker propio/partner/licenciarse) y tener el registro externo confirmado. Esos
+  dos son bloqueantes de hecho, no de política.
 - Bounded contexts involucrados: **Documents** (conformist, alimenta a Customs/Accounting) e
-  **Integrations Hub** (ACL genérico). `ConnectorCredential.credential_reference` es
-  intencionalmente un placeholder — no inventar un mecanismo de secretos aquí, eso es Fase 13.
+  **Integrations Hub** (ACL genérico). `ConnectorCredential.credential_reference` apunta a una
+  variable de entorno (decidido en Fase 13), no a un gestor de secretos dedicado todavía.
 - `integrations-hub-app` ya existe como scaffold (`core/twenty-apps/integrations-hub-app/`,
   ver ADR-003) pero, igual que `sales-extensions-app`/`quotation-app`, tiene pendiente
   `yarn install` + conexión a una instancia de Twenty antes de poder implementarse de verdad.
+- Si una sesión futura retoma la implementación real del conector `carm-cbsa`/`ace-cbp`, debe
+  revalidar la investigación de esta fase contra las fuentes oficiales vigentes en ese
+  momento — las reglas cambian (ver el aviso de enero 2026 citado arriba, que cambió durante
+  esta misma investigación).

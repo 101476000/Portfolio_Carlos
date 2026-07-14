@@ -14,43 +14,61 @@ el proyecto, humano o agente.
 Las 16 fases tienen su work order/modelo de datos especificado. Ninguna tiene código de
 servicio implementado todavía. Resumen por nivel de riesgo:
 
-**Sin checkpoint, bloqueadas solo por infraestructura (Fases 2-9):** CRM, Customers, Sales
+**Actualización importante (misma ronda, después del snapshot inicial):** Carlos levantó
+explícitamente el checkpoint humano de Accounting y Security
+(`docs/decisions/004-human-checkpoint-waiver.md`), y pidió que los conectores de aduana se
+fundamenten en investigación de fuentes oficiales en vez de bloquearse en seco. Eso cambió el
+mapa de riesgo de abajo respecto a la primera versión de este documento.
+
+**Bloqueadas solo por infraestructura, sin checkpoint (Fases 2-9):** CRM, Customers, Sales
 (bounded context CRM & Sales completo) y Shipment + Ocean + Air + Ground + Warehouse (core
 domain completo). Bloqueante común: `yarn install`/Docker no disponibles en el sandbox donde
-se especificaron — ver `core/twenty-apps/README.md`. Fase 5 además pide revisión humana del
+se especificaron — ver `core/twenty-apps/README.md`. Carlos indicó que no va a resolverlo en
+su máquina local; pendiente definir un entorno alternativo (ej. VPS) con acceso para una
+sesión de agente. Fase 5 además tiene una recomendación (no checkpoint) de revisión humana del
 modelo de datos por ser el core domain (autorevisión de agente ya aplicada, ver
 `docs/phases/05-shipment.md`).
 
-**Checkpoint humano parcial (Fase 11):** Documents y conectores genéricos son trabajo normal;
-los conectores `carm-cbsa`/`ace-cbp` requieren revisión humana total **y** registro externo
-ante CBSA/CBP (dependencia externa, semanas/meses).
+**Diseño decidido, solo bloqueadas por requisito legal externo (Fase 11 — conectores de
+aduana):** Documents y conectores genéricos son trabajo normal. Los conectores
+`carm-cbsa`/`ace-cbp` ya tienen su diseño fundamentado en fuentes oficiales (CARM/CAD, ACE/
+CATAIR — ver `docs/phases/11-documents.md`); lo que falta no es revisión de este proyecto sino
+(a) el registro externo ante CBSA/CBP y (b) que Carlos confirme si Sealion Cargo opera con
+broker licenciado propio, partner, o planea licenciarse — sin eso no se sabe a quién le habla
+realmente el conector.
 
-**Checkpoint humano total (Fases 10, 13):** Accounting y Security no tienen ni modelo
-aprobado — son propuestas explícitamente marcadas como no decididas.
+**Decididas, sin checkpoint (Fases 10, 13):** Accounting y Security tienen modelo y decisiones
+tomadas (ver esos documentos) — el cálculo real de impuestos en Accounting sigue sin definirse,
+pero por falta de una fuente jurisdiccional confiable a investigar, no por checkpoint.
 
 **Bloqueada por decisión legal, no técnica (Fase 14 en producción):** ADR-001 (licencia
-comercial Twenty.com) sigue sin resolución humana.
+comercial Twenty.com) sigue sin resolución humana — este sí sigue siendo un checkpoint real,
+no levantado por ADR-004.
 
 **Transversales sin bounded context propio (Fases 13, 14, 15, 16):** Security, Deployment,
 Testing, Roadmap — se maduran junto con las demás, no de una sola vez.
 
 ## Orden sugerido de trabajo real (no de especificación — de implementación)
 
-1. **Resolver infraestructura de desarrollo:** `yarn install` + Docker en una máquina de
-   Carlos (no en un sandbox de agente) para `core/twenty-apps/`. Sin esto, nada de Fases 2-4
-   ni 11 (porción Documents/Integrations Hub genérica) puede pasar de spec a código.
-2. **Revisión humana de Fase 5-9** (el core domain) antes de escribir migraciones reales —
-   es la que más se propaga si hay un error.
+1. **Resolver infraestructura de desarrollo** (`yarn install` + Docker para
+   `core/twenty-apps/`) en un entorno con acceso real — Carlos decidió no usar su máquina
+   local; pendiente aprovisionar y dar acceso a un entorno alternativo (ej. VPS) a una sesión
+   de agente. Sin esto, nada de Fases 2-4 ni 11 (porción genérica) puede pasar de spec a
+   código.
+2. **Revisión humana recomendada de Fase 5-9** (el core domain) antes de escribir migraciones
+   reales — ya no es checkpoint obligatorio, pero sigue siendo la fase que más se propaga si
+   hay un error de modelado.
 3. **Implementar Fases 2-9 en código**, en el orden de dependencia ya establecido
    (2→3→4 en paralelo a 5→6/7/8→9).
 4. **En paralelo, iniciar los trámites de las dependencias externas** (licencia Twenty.com,
-   registro CBSA/CBP) — no bloquean 1-3, pero tienen tiempos de calendario largos, vale la
-   pena arrancarlos ya.
-5. **Resolver Fase 13 (Security)** antes o junto con la primera implementación de un
-   conector real (Fase 11) o de Accounting (Fase 10) — varias decisiones de esas dos fases
-   dependen de las de Security (gestión de secretos, auditoría).
-6. **Fase 10 (Accounting) y Fase 11 (conectores de aduana)** solo después de su revisión
-   humana explícita — no antes, sin importar cuánto avance el resto del proyecto.
+   registro CBSA/CBP) y confirmar la pregunta de negocio de Fase 11 (broker propio/partner/
+   licenciarse) — no bloquean 1-3, pero tienen tiempos de calendario largos.
+5. **Implementar Fase 10 (Accounting) y Fase 13 (Security)** cuando convenga — ya no dependen
+   de una revisión humana previa (ADR-004), pero Security sigue siendo buena idea resolverla
+   antes de la primera implementación de un conector real, porque varias decisiones de
+   Accounting/Integrations Hub (gestión de secretos, auditoría) ya están definidas ahí.
+6. **Fase 11 (conectores de aduana):** código real solo después de (a) registro externo
+   confirmado y (b) la pregunta de negocio resuelta — el diseño en sí ya no espera revisión.
 7. **Fase 12 (AI Platform)** una vez Documents (Fase 11, porción genérica) tenga datos reales
    que indexar — antes de eso, un `EmbeddingIndex` no tiene sobre qué operar.
 8. **Fase 14 (Deployment) a producción** solo cuando ADR-001 esté 🟢 — el self-host de
