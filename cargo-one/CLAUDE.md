@@ -24,6 +24,21 @@ porque varias fases fueron escritas asumiendo implícitamente a Sealion Cargo co
 el único cliente — ver `docs/decisions/005-multi-tenant-product-clarification.md` para el
 detalle de qué se corrigió y por qué.
 
+**Principios de producto adicionales (Carlos, misma ronda que la aclaración multi-tenant):**
+- **User-friendly e intuitivo.** Ninguna pantalla debería requerir leer documentación técnica
+  para usarse — lenguaje llano en vez de nombres de campo técnicos expuestos al usuario final,
+  valores por defecto razonables, errores claros en el momento. Ver el detalle aplicado a la
+  pantalla de configuración de IA en `docs/phases/12-ai-platform.md`, sección "Principio de
+  UX" — el mismo criterio aplica a cualquier pantalla nueva del proyecto, no solo esa.
+- **IA como funcionalidad central, no accesorio**, para agilizar el trabajo del usuario
+  (redactar cotizaciones, asistir en clasificación de documentos, responder preguntas sobre
+  el estado de un shipment). Cada tenant configura sus propias credenciales del proveedor de
+  IA que prefiera usar (Claude, ChatGPT, u otro) — ver `docs/phases/12-ai-platform.md`
+  (`AIProviderConfig`) y `docs/phases/11-documents.md` (`Connector`/`ConnectorCredential`,
+  de donde `AIProviderConfig` reutiliza el mecanismo de credenciales, no uno nuevo). La IA
+  **no** está exenta de los checkpoints humanos de este archivo — ver regla explícita en
+  Fase 12.
+
 Operador humano del proyecto: Carlos Figuera (developer único, opera Sealion Cargo). Todo el
 desarrollo se ejecuta mediante agentes de Claude Code orquestados por él. Esto significa: los
 agentes deben trabajar en unidades acotadas y auto-contenidas, dejar todo documentado para que

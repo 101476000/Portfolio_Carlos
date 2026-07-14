@@ -139,8 +139,8 @@ correspondiente: no calculamos nada, solo guardamos lo que CARM/ACE ya calcularo
 |---|---|---|
 | `id` | UUID | PK |
 | `workspace_id` | UUID | Tenant |
-| `provider` | enum | `amazon_sp_api`, `wayfair_api`, `carm_cbsa`, `ace_cbp` |
-| `capabilities` | texto[] | Ej. `order_sync`, `document_submission` — qué puede hacer este conector, informativo |
+| `provider` | enum | `amazon_sp_api`, `wayfair_api`, `carm_cbsa`, `ace_cbp`, `anthropic_claude`, `openai_chatgpt`, `llm_other` — los tres últimos agregados en esta ronda para proveedores de IA (ver Fase 12, `AIProviderConfig`); reutilizan el mismo objeto en vez de crear un sistema de credenciales paralelo |
+| `capabilities` | texto[] | Ej. `order_sync`, `document_submission`, `text_generation`, `embeddings` — qué puede hacer este conector, informativo |
 | `status` | enum | `active`, `inactive`, `pending_registration` (este último para `carm_cbsa`/`ace_cbp` mientras el registro externo no esté listo) |
 
 ### Entidad: `ConnectorCredential` (relación 1:1 con `Connector`)
@@ -283,6 +283,10 @@ esto), no asumir que este resumen sigue vigente sin revalidar.
   `customs-service` y `document-pipeline-service` son servicios NestJS aparte (como
   `shipment-service`/`warehouse-service`) — no dependen de ese scaffold de Twenty, dependen de
   su propia infraestructura (Fase 14).
+- `provider` en `Connector` ahora incluye proveedores de IA (`anthropic_claude`,
+  `openai_chatgpt`, `llm_other`) — agregado en la misma ronda que Fase 12
+  (`AIProviderConfig`). Si se agrega un proveedor de IA nuevo, extender este enum aquí, no
+  crear una tabla paralela.
 - Si una sesión futura retoma la implementación real del conector `carm-cbsa`/`ace-cbp`, debe
   revalidar la investigación de esta fase contra las fuentes oficiales vigentes en ese
   momento — las reglas cambian (ver el aviso de enero 2026 citado arriba, que cambió durante

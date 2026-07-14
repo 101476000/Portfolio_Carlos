@@ -19,7 +19,7 @@ su dependencia. Ver columna "Depende de".
 | 9 | Warehouse | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/09-warehouse.md`; servicio propio (`warehouse-service`), no extiende `shipment-service` |
 | 10 | Accounting | 🟡 En curso | Fase 1, 5 | Sí (checkpoint levantado, ADR-004) | Modelo y reglas decididos en `docs/phases/10-accounting.md`; cálculo de impuestos real sigue sin definir (no es checkpoint, es dato jurisdiccional) |
 | 11 | Documents, Customs e Integrations Hub | 🟡 En curso | Fase 1, 5 | Sí, salvo transmisión real a aduana | Modelo de los tres contextos listo (Customs se agregó en esta ronda — ver `docs/phases/11-documents.md`), conectores de aduana fundamentados en fuentes oficiales — transmisión real sigue gateada por ley, no por este proyecto |
-| 12 | AI Platform | 🟡 En curso | Fase 1, 11 | Sí | Modelo listo en `docs/phases/12-ai-platform.md`; fija la regla de que checkpoints de `CLAUDE.md` aplican también a agentes de IA |
+| 12 | AI Platform | 🟡 En curso | Fase 1, 11 | Sí | Modelo listo, incluye `AIProviderConfig` (configuración de credenciales de IA por tenant, reutiliza `Connector` de Fase 11) y casos de uso concretos — ver `docs/phases/12-ai-platform.md` |
 | 13 | Security | 🟡 En curso | Fase 1 | Sí (checkpoint levantado, ADR-004) | Decisiones tomadas en `docs/phases/13-security.md`; `.claude/settings.json` corregido en la misma sesión |
 | 14 | Deployment | 🟡 En curso | Fase 1 | Parcial | Topología de desarrollo/self-host propuesta en `docs/phases/14-deployment.md`; producción bloqueada por ADR-001 |
 | 15 | Testing | 🟡 En curso | Todas las anteriores relevantes | Sí | Estrategia por capa en `docs/phases/15-testing.md`; se aplica junto a cada fase de dominio, no al final |
@@ -82,3 +82,11 @@ Cargo es el primer tenant, no el único cliente posible. Se agregó `Organizatio
 (Fase 2) para que cualquier freight forwarder que contrate el servicio configure los datos de
 su propia empresa (moneda/INCOTERMS por defecto, broker de aduana propio, branding) sin tocar
 código. Ver `docs/decisions/005-multi-tenant-product-clarification.md`.
+
+**Producto: UX intuitivo + IA configurable por tenant.** Carlos pidió que el producto sea
+user-friendly y que la IA sea funcionalidad central, no accesorio, con un lugar donde cada
+tenant configure sus propias credenciales de proveedor de IA (Claude, ChatGPT, u otro). Se
+agregó `AIProviderConfig` en Fase 12, reutilizando `Connector`/`ConnectorCredential` de
+Fase 11 en vez de un mecanismo de credenciales nuevo — la pantalla de configuración vive
+dentro de `integrations-hub-app`. El principio de UX queda documentado en `CLAUDE.md` y en
+Fase 12 para aplicarse a cualquier pantalla futura del proyecto, no solo esa.
