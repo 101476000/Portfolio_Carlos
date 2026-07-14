@@ -1,4 +1,4 @@
-# Fase 11 — Documents e Integrations Hub
+# Fase 11 — Documents, Customs e Integrations Hub
 
 **Estado:** 🟡 En curso — work order especificado, incluyendo el **diseño** de los conectores
 de aduana fundamentado en fuentes oficiales (ver sección de investigación abajo; decisión de
@@ -10,17 +10,33 @@ externas").
 
 ## Contexto
 
-Depende de: Fase 1 (cerrada). Dos bounded contexts distintos en una sola fase (así los
-agrupa `docs/00-master-index.md`):
+Depende de: Fase 1 (cerrada), Fase 5 (Customs referencia `Shipment`). **Tres** bounded
+contexts en una sola fase (originalmente eran dos — ver "Gap resuelto" más abajo):
 
 - **Documents**, fila 9 de `docs/phases/01-architecture.md` sección 3 — servicio satélite
   `services/document-pipeline-service`. Patrón *conformist*: Shipment/Customs/Accounting
   consumen su salida ya validada, no reinterpretan el documento crudo.
+- **Customs**, fila 7 de `docs/phases/01-architecture.md` sección 3 — servicio satélite
+  propio `services/customs-service` (ya anticipado en `PROJECT_STRUCTURE.md`, nunca
+  modelado hasta ahora). Downstream de Shipment, consumidor de `Document` (vía
+  `ComplianceDocument`) y usuario del conector `carm-cbsa`/`ace-cbp` de Integrations Hub para
+  la transmisión real.
 - **Integrations Hub**, fila 10 — vive en `integrations/*` (conectores) + la app
   `integrations-hub-app` de Twenty, **ya escafoldada** en
   `core/twenty-apps/integrations-hub-app/` (ver `docs/decisions/003-twenty-apps-scaffolding.md`).
   Anti-Corruption Layer genérico: nadie más en el proyecto habla directo con un sistema
   externo.
+
+### Gap resuelto: por qué Customs no tenía modelo hasta esta actualización
+
+`docs/phases/01-architecture.md` identificó a Customs como bounded context propio desde
+Fase 1, pero `docs/00-master-index.md` nunca le dio una fase numerada dedicada (a diferencia
+de Accounting, que sí tiene su Fase 10) — quedó mencionado solo de forma implícita dentro del
+nombre de esta fase. Se resuelve **sin agregar un número de fase nuevo** (evita renumerar
+Fases 12-16 y todas sus referencias cruzadas ya escritas): Customs se modela formalmente
+dentro de esta misma Fase 11, junto a Documents e Integrations Hub, con quienes de hecho ya
+comparte dependencias directas (`Document` para la evidencia documental, el conector
+`carm-cbsa`/`ace-cbp` para la transmisión). El título de la fase se actualizó para reflejarlo.
 
 ## Modelo de datos — Documents (`services/document-pipeline-service`)
 
@@ -62,6 +78,58 @@ agrupa `docs/00-master-index.md`):
 | `extracted_fields` | JSON | Estructura depende de `document_type` — no se fuerza un schema único por fase |
 | `reviewed_by` | UUID, nullable | Referencia a `Person`/usuario de Twenty que aprobó — el pipeline **siempre** pasa por `pending_approval` antes de que otro contexto (Customs, Accounting) use el dato extraído; no hay aprobación automática en esta fase |
 | `approved_at` | timestamp, nullable | |
+
+## Modelo de datos — Customs (`services/customs-service`)
+
+Nota de nomenclatura: `docs/phases/01-architecture.md` había nombrado la entidad de cálculo
+`DutyCalculation`. Se renombra aquí a `DutyAssessment` — ver justificación en la fila
+correspondiente: no calculamos nada, solo guardamos lo que CARM/ACE ya calcularon.
+
+### Agregado raíz: `CustomsDeclaration`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | UUID | PK |
+| `workspace_id` | UUID | Tenant |
+| `related_shipment_id` | UUID | Referencia no forzada a `Shipment` (Fase 5) — a diferencia de otras referencias cruzadas de este proyecto, esta **no es nullable**: una declaración de aduana siempre es sobre un shipment concreto |
+| `jurisdiction` | enum | `cbsa_carm`, `cbp_ace` — de qué lado de la frontera es esta declaración; un shipment que cruza ambas requiere dos `CustomsDeclaration`, no una con dos jurisdicciones mezcladas |
+| `broker_of_record_company_id` | UUID, nullable | Referencia a `Company` de Twenty con rol `customs_broker` (Fase 2) — quién presenta esto ante CBSA/CBP en nombre de Sealion Cargo/el importador. **Nullable hasta que se resuelva la pregunta de negocio abierta** (ver sección de investigación) — sin esto poblado, esta declaración no puede pasar de `draft` |
+| `cad_reference_number` | texto, nullable | Número de referencia oficial (CAD de CARM, o el entry number de ACE) — se completa solo después de una transmisión real, nunca antes |
+| `status` | enum | `draft`, `pending_broker_submission`, `submitted`, `accepted`, `rejected` — estados de **nuestro tracking**, no el state machine interno de CBSA/CBP, que no controlamos ni replicamos |
+| `submitted_at` / `decided_at` | timestamp, nullable | |
+
+### Entidad: `CustomsDeclarationLine` (relación many-to-one a `CustomsDeclaration`)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | UUID | PK |
+| `customs_declaration_id` | UUID | FK a `CustomsDeclaration` |
+| `source_cargo_unit_id` | UUID, nullable | Referencia no forzada a `CargoUnit` (Fase 5) |
+| `hs_code` | texto | **Sin validación ni lookup automático en esta fase** — se captura tal como lo provee el broker/importador. Clasificar mal esto es exactamente el riesgo que sigue gateado por `CLAUDE.md` regla 3 |
+| `description` | texto | Descripción de la mercancía para esta línea |
+| `country_of_origin` | texto (ISO 3166-1 alpha-2) | |
+| `quantity` / `unit_of_measure` | — | |
+| `value_for_duty` / `value_for_duty_currency` | decimal / ISO 4217 | Valor declarado, no un cálculo — lo provee quien clasifica, no se infiere |
+
+### Entidad: `DutyAssessment` (relación 1:1 con `CustomsDeclaration`)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `customs_declaration_id` | UUID, único | FK a `CustomsDeclaration` |
+| `total_duties_amount` / `total_taxes_amount` | decimal | **Eco de la respuesta oficial de CARM/ACE, no un cálculo propio** — CARM calcula esto automáticamente a partir del CAD (ver investigación abajo); esta tabla solo guarda lo que la respuesta oficial trajo, para que Cargo One pueda mostrárselo al cliente sin volver a consultar la fuente cada vez |
+| `currency` | ISO 4217 | |
+| `assessed_by` | texto | `cbsa_carm` o `cbp_ace` — de dónde vino este número, siempre explícito para que nadie confunda esto con un cálculo interno |
+| `received_at` | timestamp | |
+
+### Entidad: `ComplianceDocument` (relación many-to-one a `CustomsDeclaration`, many-to-one a `Document`)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | UUID | PK |
+| `customs_declaration_id` | UUID | FK a `CustomsDeclaration` |
+| `document_id` | UUID | FK a `Document` (definido arriba, en Documents) — **no duplica el archivo ni su contenido**, solo asocia un documento ya existente a esta declaración |
+| `document_role` | enum | `commercial_invoice`, `certificate_of_origin`, `packing_list`, `bill_of_lading`, `other` |
+| `required` | booleano | Si este tipo de documento es obligatorio para esta declaración — no hay lógica automática que determine esto por tipo de mercancía/jurisdicción en esta fase, se marca a mano |
 
 ## Modelo de datos — Integrations Hub (`integrations/*`)
 
@@ -157,22 +225,14 @@ esto), no asumir que este resumen sigue vigente sin revalidar.
   depende de esa respuesta.
 - Clasificación arancelaria (HS code) o valuación aduanera de un embarque real — sigue
   gateado por `CLAUDE.md` regla 3 (ver la corrección hecha en esta sesión), un error ahí es
-  una sanción real.
+  una sanción real. `CustomsDeclarationLine.hs_code`/`value_for_duty` son campos de captura,
+  no de inferencia — nada en este modelo clasifica o valúa automáticamente.
+- Validación automática de qué `ComplianceDocument` son obligatorios por tipo de mercancía o
+  jurisdicción — se marca a mano en esta fase, no se infiere una regla general.
 - Elección de proveedor de OCR/clasificación de documentos — decisión técnica que se toma al
   implementar, no se fuerza en esta fase.
-- El código de los servicios/conectores.
-
-## Nota: gap de alcance detectado (Customs como bounded context propio)
-
-`docs/phases/01-architecture.md` sección 3 identifica **Customs** como su propio bounded
-context (fila 7: `CustomsDeclaration`, `DutyCalculation`, `ComplianceDocument`, en
-`services/customs-service`) — distinto de Documents e Integrations Hub. Pero
-`docs/00-master-index.md` solo le da espacio implícito dentro de la Fase 11 ("Documents
-incluye Integrations Hub"), sin una fase numerada propia para el modelo de datos de
-`CustomsDeclaration` en sí (a diferencia de cómo Accounting sí tiene su Fase 10 dedicada).
-Esta sesión no lo resuelve — sería expandir el alcance más allá de lo que se pidió — pero lo
-deja anotado explícitamente para que una sesión futura decida si amerita una Fase 11.5/17 o
-si se absorbe formalmente dentro de Fase 11. Ver también `docs/phases/16-roadmap.md`.
+- El código de los servicios/conectores (incluye `services/customs-service`, que ahora tiene
+  modelo pero sigue sin código, igual que `document-pipeline-service`).
 
 ## Criterios de aceptación
 
@@ -184,32 +244,45 @@ si se absorbe formalmente dentro de Fase 11. Ver también `docs/phases/16-roadma
       Fase 13: variables de entorno, no un gestor de secretos dedicado todavía).
 - [x] Diseño de los conectores `carm-cbsa`/`ace-cbp` fundamentado en fuentes oficiales (ver
       sección de investigación).
+- [x] Modelo de datos de `CustomsDeclaration`/`CustomsDeclarationLine`/`DutyAssessment`/
+      `ComplianceDocument` definido, cerrando el gap de bounded context detectado — Customs ya
+      no vive solo implícito en el nombre de la fase.
 - [ ] **Pregunta de negocio abierta:** ¿Sealion Cargo opera con broker propio, partner, o
-      planea licenciarse? — respuesta de Carlos, necesaria para terminar de definir la
-      arquitectura exacta de `carm-cbsa`/`ace-cbp` (a quién le habla el conector realmente).
+      planea licenciarse? — respuesta de Carlos, necesaria para poblar
+      `CustomsDeclaration.broker_of_record_company_id` y terminar de definir la arquitectura
+      exacta de `carm-cbsa`/`ace-cbp` (a quién le habla el conector realmente).
 - [ ] `services/document-pipeline-service` implementado y verificado.
+- [ ] `services/customs-service` implementado con las migraciones correspondientes.
 - [ ] Conectores `amazon-sp-api` y `wayfair-api` implementados siguiendo el patrón "thin
       connector" (`integrations/shared/connector-interface.ts` en `PROJECT_STRUCTURE.md`).
 - [ ] Conectores `carm-cbsa`/`ace-cbp`: código real solo tras (a) registro externo confirmado
       y (b) la pregunta de negocio de arriba resuelta — no requiere ya una revisión humana
       adicional del diseño en sí, eso ya se investigó y quedó documentado.
-- [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo para la porción Documents +
-      conectores genéricos; los conectores de aduana pueden quedar 🟡/⛔ indefinidamente sin
-      que eso bloquee cerrar el resto de esta fase.
+- [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo para la porción Documents/Customs
+      + conectores genéricos; los conectores de aduana reales pueden quedar 🟡/⛔
+      indefinidamente sin que eso bloquee cerrar el resto de esta fase.
 
 ## Notas para el agente
 
-- El diseño de los conectores de aduana ya no requiere pausar a pedir revisión humana
-  (ADR-004) — sí requiere, antes de escribir código real, resolver la pregunta de negocio
-  abierta (broker propio/partner/licenciarse) y tener el registro externo confirmado. Esos
-  dos son bloqueantes de hecho, no de política.
-- Bounded contexts involucrados: **Documents** (conformist, alimenta a Customs/Accounting) e
-  **Integrations Hub** (ACL genérico). `ConnectorCredential.credential_reference` apunta a una
-  variable de entorno (decidido en Fase 13), no a un gestor de secretos dedicado todavía.
+- El diseño de los conectores de aduana y del modelo de Customs ya no requiere pausar a pedir
+  revisión humana (ADR-004) — sí requiere, antes de escribir código real, resolver la
+  pregunta de negocio abierta (broker propio/partner/licenciarse) y tener el registro externo
+  confirmado. Esos dos son bloqueantes de hecho, no de política.
+- Bounded contexts involucrados: **Documents** (conformist, alimenta a Customs/Accounting),
+  **Customs** (downstream de Shipment y de Documents, usuario del conector de Integrations
+  Hub) e **Integrations Hub** (ACL genérico). `ConnectorCredential.credential_reference`
+  apunta a una variable de entorno (decidido en Fase 13), no a un gestor de secretos dedicado
+  todavía.
 - `integrations-hub-app` ya existe como scaffold (`core/twenty-apps/integrations-hub-app/`,
   ver ADR-003) pero, igual que `sales-extensions-app`/`quotation-app`, tiene pendiente
   `yarn install` + conexión a una instancia de Twenty antes de poder implementarse de verdad.
+  `customs-service` y `document-pipeline-service` son servicios NestJS aparte (como
+  `shipment-service`/`warehouse-service`) — no dependen de ese scaffold de Twenty, dependen de
+  su propia infraestructura (Fase 14).
 - Si una sesión futura retoma la implementación real del conector `carm-cbsa`/`ace-cbp`, debe
   revalidar la investigación de esta fase contra las fuentes oficiales vigentes en ese
   momento — las reglas cambian (ver el aviso de enero 2026 citado arriba, que cambió durante
   esta misma investigación).
+- `DutyAssessment` se renombró desde `DutyCalculation` (nombre original de
+  `docs/phases/01-architecture.md`) — si se busca "DutyCalculation" en el resto del repo y no
+  aparece en este archivo, es por esto, no un error.

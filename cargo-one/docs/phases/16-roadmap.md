@@ -29,11 +29,13 @@ sesión de agente. Fase 5 además tiene una recomendación (no checkpoint) de re
 modelo de datos por ser el core domain (autorevisión de agente ya aplicada, ver
 `docs/phases/05-shipment.md`).
 
-**Diseño decidido, solo bloqueadas por requisito legal externo (Fase 11 — conectores de
-aduana):** Documents y conectores genéricos son trabajo normal. Los conectores
-`carm-cbsa`/`ace-cbp` ya tienen su diseño fundamentado en fuentes oficiales (CARM/CAD, ACE/
-CATAIR — ver `docs/phases/11-documents.md`); lo que falta no es revisión de este proyecto sino
-(a) el registro externo ante CBSA/CBP y (b) que Carlos confirme si Sealion Cargo opera con
+**Diseño decidido, solo bloqueadas por requisito legal externo (Fase 11 — Documents, Customs
+e Integrations Hub):** Documents, el modelo de `CustomsDeclaration` (Customs ya no vive solo
+implícito en el nombre de la fase — se agregó su modelo completo en esta ronda) y los
+conectores genéricos son trabajo normal. Los conectores `carm-cbsa`/`ace-cbp` ya tienen su
+diseño fundamentado en fuentes oficiales (CARM/CAD, ACE/CATAIR — ver
+`docs/phases/11-documents.md`); lo que falta no es revisión de este proyecto sino (a) el
+registro externo ante CBSA/CBP y (b) que Carlos confirme si Sealion Cargo opera con
 broker licenciado propio, partner, o planea licenciarse — sin eso no se sabe a quién le habla
 realmente el conector.
 
