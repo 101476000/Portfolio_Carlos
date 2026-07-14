@@ -13,9 +13,9 @@ su dependencia. Ver columna "Depende de".
 | 3 | Customers | 🟡 En curso | Fase 1, 2 | Sí | Spec lista en `docs/phases/03-customers.md`. Mismo bloqueante que Fase 2 |
 | 4 | Sales | 🟡 En curso | Fase 1, 2, 3 | Sí | Spec lista, app `quotation-app` escafoldada. Mismo bloqueante que Fase 2/3 |
 | 5 | Shipment | 🟡 En curso | Fase 1 | Sí (con revisión de modelo de datos) | Modelo de datos listo en `docs/phases/05-shipment.md`; `services/shipment-service` sin código todavía |
-| 6 | Ocean | 🔲 No iniciada | Fase 5 | Sí | |
-| 7 | Air | 🔲 No iniciada | Fase 5 | Sí | |
-| 8 | Ground | 🔲 No iniciada | Fase 5 | Sí | |
+| 6 | Ocean | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/06-ocean.md`, extiende Fase 5 sin tocarla |
+| 7 | Air | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/07-air.md`, mismo patrón que Fase 6 |
+| 8 | Ground | 🟡 En curso | Fase 5 | Sí | Modelo listo en `docs/phases/08-ground.md` (sin tabla de `CargoUnit` — no hace falta) |
 | 9 | Warehouse | 🔲 No iniciada | Fase 5 | Sí | |
 | 10 | Accounting | 🔲 No iniciada | Fase 1, 5 | **No — checkpoint humano obligatorio** | Dinero real |
 | 11 | Documents (incluye Integrations Hub) | 🔲 No iniciada | Fase 1 | Parcial — checkpoint en conectores de aduana | CARM/ACE requieren registro externo primero |
@@ -70,9 +70,19 @@ como "con revisión de modelo de datos": se recomienda que Carlos revise el mode
 que una sesión de agente escriba migraciones reales, dado que es el core domain del que
 dependen seis fases más.
 
-Con Fase 5 especificada, Fases 6 (Ocean), 7 (Air) y 8 (Ground) ya podrían empezar a
-especificarse en paralelo (dependen solo de Fase 5), aunque conviene esperar la revisión
-humana del modelo antes de construir sobre él.
+Fases 6 (Ocean), 7 (Air) y 8 (Ground) también tienen su modelo de datos completo, todas
+siguiendo el mismo patrón de extensión 1:1 sobre `Shipment`/`CargoUnit` sin modificar las
+tablas de Fase 5: `OceanShipmentDetails`/`OceanContainerDetails` (Fase 6),
+`AirShipmentDetails`/`AirCargoUnitDetails` (Fase 7), y `GroundShipmentDetails` (Fase 8 —
+sin tabla de `CargoUnit`, justificado explícitamente en esa fase por no tener caso de uso
+real todavía). Con esto, el **core domain completo** (shared kernel + los tres modos de
+transporte) queda especificado como una unidad consistente — Fases 5-8 comparten una sola
+revisión humana pendiente antes de que se escriba código real (ver "Notas para el agente" de
+cada una).
+
+Siguiente candidata natural: Fase 9 (Warehouse), la última que depende únicamente de Fase 5
+antes de entrar a fases con checkpoint humano obligatorio (Accounting, Fase 10) o
+dependencias externas (Documents/Customs, Fase 11).
 
 Pendiente en paralelo (no bloquea desarrollo): ADR-001 (licencia comercial con Twenty.com)
 sigue sin resolución humana — solo bloquea Fase 14 en producción con clientes reales.
