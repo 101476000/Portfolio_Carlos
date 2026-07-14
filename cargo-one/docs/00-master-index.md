@@ -21,7 +21,7 @@ su dependencia. Ver columna "Depende de".
 | 11 | Documents, Customs e Integrations Hub | 🟡 En curso | Fase 1, 5 | Sí, salvo transmisión real a aduana | Modelo de los tres contextos listo (Customs se agregó en esta ronda — ver `docs/phases/11-documents.md`), conectores de aduana fundamentados en fuentes oficiales — transmisión real sigue gateada por ley, no por este proyecto |
 | 12 | AI Platform | 🟡 En curso | Fase 1, 11 | Sí | Modelo listo, incluye `AIProviderConfig` (configuración de credenciales de IA por tenant, reutiliza `Connector` de Fase 11) y casos de uso concretos — ver `docs/phases/12-ai-platform.md` |
 | 13 | Security | 🟡 En curso | Fase 1 | Sí (checkpoint levantado, ADR-004) | Decisiones tomadas en `docs/phases/13-security.md`; `.claude/settings.json` corregido en la misma sesión |
-| 14 | Deployment | 🟡 En curso | Fase 1 | Parcial | Topología de desarrollo/self-host propuesta en `docs/phases/14-deployment.md`; producción bloqueada por ADR-001 |
+| 14 | Deployment | 🟡 En curso | Fase 1 | Parcial | VPS de desarrollo real levantado (Hostinger, Twenty+Postgres+Redis+Traefik verificados sanos) — ver `docs/phases/14-deployment.md`; producción sigue bloqueada por ADR-001 |
 | 15 | Testing | 🟡 En curso | Todas las anteriores relevantes | Sí | Estrategia por capa en `docs/phases/15-testing.md`; se aplica junto a cada fase de dominio, no al final |
 | 16 | Roadmap | 🟡 En curso | Todas | Sí (documentación) | Snapshot y orden de implementación en `docs/phases/16-roadmap.md` |
 
