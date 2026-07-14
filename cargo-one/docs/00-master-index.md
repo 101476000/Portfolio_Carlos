@@ -12,7 +12,7 @@ su dependencia. Ver columna "Depende de".
 | 2 | CRM | 🟡 En curso | Fase 1 | Sí | Spec lista, app `sales-extensions-app` escafoldada. Falta `yarn install` + Docker — ver ADR-003 |
 | 3 | Customers | 🟡 En curso | Fase 1, 2 | Sí | Spec lista en `docs/phases/03-customers.md`. Mismo bloqueante que Fase 2 |
 | 4 | Sales | 🟡 En curso | Fase 1, 2, 3 | Sí | Spec lista, app `quotation-app` escafoldada. Mismo bloqueante que Fase 2/3 |
-| 5 | Shipment | 🔲 No iniciada | Fase 1 | Sí (con revisión de modelo de datos) | Núcleo del dominio logístico |
+| 5 | Shipment | 🟡 En curso | Fase 1 | Sí (con revisión de modelo de datos) | Modelo de datos listo en `docs/phases/05-shipment.md`; `services/shipment-service` sin código todavía |
 | 6 | Ocean | 🔲 No iniciada | Fase 5 | Sí | |
 | 7 | Air | 🔲 No iniciada | Fase 5 | Sí | |
 | 8 | Ground | 🔲 No iniciada | Fase 5 | Sí | |
@@ -60,9 +60,19 @@ reutilizando `Trade Lane`/`incoterm` de Fases 2-3, con el contrato de evento
 las tres porciones del bounded context CRM & Sales (Fases 2, 3, 4) quedan completamente
 especificadas y consistentes entre sí, todas en 🟡 por el mismo bloqueante de infraestructura.
 
-Fase 5 (Shipment) puede especificarse en paralelo — solo depende de Fase 1, cuya spec ya
-existe — y es la siguiente candidata natural: es el núcleo del dominio logístico y el
-consumidor real del evento `quotation.accepted` que Fase 4 dejó documentado.
+Fase 5 (Shipment) también tiene su modelo de datos completo (`docs/phases/05-shipment.md`):
+agregado `Shipment` + `Booking`/`CargoUnit`/`Milestone`/`Party`, consumidor real (documentado)
+del evento `quotation.accepted` de Fase 4, y puntos de extensión claros para que Fases 6-8
+(Ocean/Air/Ground) agreguen sus tablas específicas de modo sin tocar este modelo base. A
+diferencia de Fases 2-4, aquí **no hay ni scaffold de código todavía** —
+`services/shipment-service/` no existe como proyecto — y el master index marca esta fase
+como "con revisión de modelo de datos": se recomienda que Carlos revise el modelo antes de
+que una sesión de agente escriba migraciones reales, dado que es el core domain del que
+dependen seis fases más.
+
+Con Fase 5 especificada, Fases 6 (Ocean), 7 (Air) y 8 (Ground) ya podrían empezar a
+especificarse en paralelo (dependen solo de Fase 5), aunque conviene esperar la revisión
+humana del modelo antes de construir sobre él.
 
 Pendiente en paralelo (no bloquea desarrollo): ADR-001 (licencia comercial con Twenty.com)
 sigue sin resolución humana — solo bloquea Fase 14 en producción con clientes reales.
