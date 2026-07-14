@@ -24,6 +24,13 @@ construir perfiles de cliente o cotizaciones sobre esos datos. Si esto se mezcla
 o 4, esas fases tendrían que redefinir el mismo vocabulario — señal de bounded context
 duplicado que `CLAUDE.md` pide evitar.
 
+**Aclaración de producto agregada en esta ronda (ver `docs/decisions/005-multi-tenant-product-clarification.md`):**
+Cargo One es multi-tenant desde el día uno — cualquier freight forwarder que contrate el
+servicio crea su propio workspace en Twenty y necesita configurar los datos de **su propia
+empresa** (no los de sus clientes, eso ya lo cubre esta fase con `company_role`/`Trade Lane`
+y Fase 3 con `CustomerLogisticsProfile`). Ese pedazo faltaba — se agrega abajo como
+`OrganizationProfile`.
+
 ## Alcance de esta fase
 
 **Incluido:**
@@ -35,6 +42,34 @@ duplicado que `CLAUDE.md` pide evitar.
 | `industry_vertical` | Campo custom (select) en `Company` | ídem | Clasificación comercial simple (ej. `retail`, `manufacturing`, `automotive`) para reporting, no para lógica de negocio |
 | `contact_role` | Campo custom (multi-select) en `Person` | ídem | Valores: `primary`, `operations`, `billing`, `customs` — de qué trata cada contacto dentro de una Company |
 | `Trade Lane` | Objeto custom nuevo (dato de referencia) | ídem | Campos: `origin_country`, `origin_port_or_city`, `destination_country`, `destination_port_or_city`. Relación many-to-many con `Company` (`primary_trade_lanes`) |
+| `OrganizationProfile` | Objeto custom nuevo, **singleton por workspace** (una sola fila por tenant) | ídem | Configuración de la propia empresa del tenant — ver tabla de campos abajo |
+
+### `OrganizationProfile` — la empresa del tenant, no la de sus clientes
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `legal_name` | texto | Razón social del tenant (ej. "Sealion Cargo Inc.") |
+| `trade_name` | texto, nullable | Nombre comercial si difiere del legal |
+| `tax_id` / `business_number` | texto | Identificador fiscal/de negocio del tenant — mismo criterio que `Company.tax_id`: sin validación por país en esta fase |
+| `default_currency` | texto (ISO 4217) | Moneda por defecto para `Quotation`/`Invoice` de este tenant — evita que cada cotización tenga que preguntarlo |
+| `default_incoterms` | texto (mismo catálogo de Fase 3) | Default de la empresa, distinto del `preferred_incoterms` por cliente de `CustomerLogisticsProfile` (Fase 3) — ese es por cliente del tenant, este es el default general del tenant cuando no hay uno más específico |
+| `primary_operating_countries` | texto[] (ISO 3166-1 alpha-2) | En qué países opera este tenant — informativo, no dispara reglas de compliance por sí solo |
+| `logo_reference` | texto, nullable | Referencia al logo del tenant para documentos/cotizaciones/facturas generados por la plataforma (branding propio, no el de Cargo One) |
+| `customs_filing_mode` | enum | `own_licensed_broker`, `partner_broker`, `not_configured` — **reemplaza** el enfoque anterior de tratar esto como una pregunta única para todo el sistema (ver corrección en Fase 11): cada tenant configura lo suyo aquí |
+| `customs_broker_of_record_company_id` | UUID, nullable | Si `customs_filing_mode != not_configured`, referencia a la `Company` (rol `customs_broker`, puede ser una Company del propio tenant si tiene broker in-house) que presenta CADs/entries en su nombre |
+
+**Por qué singleton y no una fila más de `Company`:** el tenant no es "un cliente más" del
+CRM — es el dueño del workspace. Modelarlo como una fila de `Company` con un rol especial
+generaría ambigüedad (¿puede el sistema mostrarle al tenant su propia empresa en la lista de
+clientes? ¿puede alguien accidentalmente asignarle `company_role = shipper`?). Un objeto
+singleton separado evita esa confusión desde el modelo de datos, no solo por convención.
+
+**Onboarding de un tenant nuevo:** la creación del workspace en sí (signup, invitar
+miembros) es 100% nativa de Twenty — no se reconstruye. Lo único nuevo de este proyecto es
+que, al crear el workspace, la UI debe guiar al tenant a completar su `OrganizationProfile`
+antes de dejarlo operar CRM/Sales/Shipment con normalidad — el flujo de ese guiado (wizard,
+checklist, o simplemente un campo obligatorio bloqueante) es detalle de implementación, no se
+decide en esta fase.
 
 Todo lo anterior se define como código versionado dentro de `sales-extensions-app`
 (`core/twenty-apps/sales-extensions-app/`, ya escafoldado con `create-twenty-app` — ver
@@ -62,6 +97,8 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
       `CLAUDE.md`).
 - [ ] `Trade Lane` expuesto correctamente en GraphQL/REST (verificado con una consulta de
       prueba contra el workspace de desarrollo).
+- [ ] `OrganizationProfile` verificado como singleton real (no permite dos filas en el mismo
+      workspace) — regla de aplicación, documentar cómo se hizo cumplir al implementar.
 - [ ] No se duplicó ningún campo que ya exista nativo en Twenty (Company/Person) — confirmado
       contra el esquema real antes de crear campos nuevos.
 - [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo cuando lo anterior esté
@@ -85,3 +122,8 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
   contra `docs/phases/01-architecture.md` sección 3 que ningún campo propuesto pertenece en
   realidad a Fase 3 (perfil de cliente) o Fase 4 (ventas) — si hay duda, preguntar al humano
   antes de crear el campo, no asumir.
+- `OrganizationProfile` es la corrección de un gap de producto real, no una anticipación
+  especulativa (ver ADR-005): sin esto, cada fase que necesitara "el default de moneda/
+  INCOTERMS/broker del tenant" hubiera terminado hardcodeando el caso de Sealion Cargo. No
+  confundirlo con `CustomerLogisticsProfile` (Fase 3) — ese es sobre los clientes del tenant,
+  este es sobre el tenant mismo.

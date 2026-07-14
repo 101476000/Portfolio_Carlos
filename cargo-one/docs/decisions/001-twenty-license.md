@@ -4,10 +4,14 @@
 
 ## Contexto
 
-Twenty CRM es AGPL-3.0. Cargo One es un producto comercial que se ofrecerá como servicio
-a terceros (Sealion Cargo y, potencialmente, otros freight forwarders). Bajo AGPL-3.0, esto
-obliga a publicar como código abierto cualquier modificación usada para dar servicio por red,
-salvo que se adquiera una licencia comercial del titular de derechos.
+Twenty CRM es AGPL-3.0. Cargo One es un producto comercial **multi-tenant** que se ofrecerá
+como servicio a terceros — Sealion Cargo es el primer tenant/cliente ancla, no el único
+(aclaración explícita de Carlos, ver `docs/decisions/005-multi-tenant-product-clarification.md`).
+Bajo AGPL-3.0, esto obliga a publicar como código abierto cualquier modificación usada para
+dar servicio por red, salvo que se adquiera una licencia comercial del titular de derechos —
+el hecho de que sea multi-tenant (varios freight forwarders, no solo uso interno de Sealion
+Cargo) hace este punto más urgente, no menos: es exactamente el escenario de "dar servicio
+por red a terceros" que dispara la obligación de AGPL-3.0.
 
 Twenty.com ofrece una excepción de licencia comercial ("twenty-ee") para casos como este —
 ver el archivo LICENSE del repo oficial (github.com/twentyhq/twenty/blob/main/LICENSE).

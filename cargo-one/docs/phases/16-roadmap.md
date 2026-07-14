@@ -35,9 +35,10 @@ implícito en el nombre de la fase — se agregó su modelo completo en esta ron
 conectores genéricos son trabajo normal. Los conectores `carm-cbsa`/`ace-cbp` ya tienen su
 diseño fundamentado en fuentes oficiales (CARM/CAD, ACE/CATAIR — ver
 `docs/phases/11-documents.md`); lo que falta no es revisión de este proyecto sino (a) el
-registro externo ante CBSA/CBP y (b) que Carlos confirme si Sealion Cargo opera con
-broker licenciado propio, partner, o planea licenciarse — sin eso no se sabe a quién le habla
-realmente el conector.
+registro externo ante CBSA/CBP y (b) que cada tenant configure su propio
+`OrganizationProfile.customs_filing_mode` (Fase 2, ADR-005) — sin eso no se sabe a quién le
+habla realmente el conector para ese tenant. Sealion Cargo, como primer tenant, es el primer
+caso a resolver, no el único.
 
 **Decididas, sin checkpoint (Fases 10, 13):** Accounting y Security tienen modelo y decisiones
 tomadas (ver esos documentos) — el cálculo real de impuestos en Accounting sigue sin definirse,

@@ -1,7 +1,10 @@
 # Cargo One — Sealion Cargo
 
-Plataforma SaaS de freight forwarding construida sobre Twenty CRM, desarrollada por un
-developer único orquestando agentes de Claude Code.
+Plataforma SaaS **multi-tenant** de freight forwarding construida sobre Twenty CRM,
+desarrollada por un developer único orquestando agentes de Claude Code. Sealion Cargo es el
+primer tenant/cliente ancla, no el único — cualquier freight forwarder que contrate el
+servicio configura los datos de su propia empresa en su propio workspace (ver ADR-005 en
+`docs/decisions/`).
 
 ## Antes de escribir código
 

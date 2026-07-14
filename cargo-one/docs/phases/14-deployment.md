@@ -23,7 +23,7 @@ ningún contenido de esta fase acelera esa decisión.
 | `sales-extensions-app`, `quotation-app`, `integrations-hub-app` | `yarn twenty dev` (Apps framework), apuntando al Twenty local o self-hosted | Requieren Docker corriendo — ver `core/twenty-apps/README.md` para el bloqueo actual |
 | `shipment-service`, `warehouse-service`, `accounting-service`, `customs-service` (dentro de `document-pipeline-service`/Documents), `ai-gateway-service` | NestJS, cada uno con su propia base Postgres (`logistics_{workspace_uuid}` por tenant, ADR-002) | **No comparten base de datos entre sí ni con Twenty** — ver regla de dependencia en `PROJECT_STRUCTURE.md` |
 | Redis compartido | Un solo Redis para BullMQ entre los servicios satélite (no el mismo Redis que usa Twenty internamente, para no acoplar su disponibilidad) | Decisión propuesta, no verificada contra una necesidad real de throughput todavía |
-| Reverse proxy / ingress | No decidido | Depende de si el self-host es de un solo tenant (Sealion Cargo) o multi-cliente desde el día uno — pregunta para el humano, no se asume |
+| Reverse proxy / ingress | No decidido en detalle, pero el supuesto base ya está resuelto | **Multi-cliente desde el día uno, no un solo tenant** (ADR-005) — Sealion Cargo es el primer tenant, no el único. El self-host debe soportar que cualquier freight forwarder cree su propio workspace en la misma instancia de Twenty (que ya es multi-workspace nativamente) y que cada servicio satélite resuelva `workspace_id` en cada request — el diseño concreto del proxy/ingress (subdominio por tenant vs. path-based, TLS por tenant si aplica) queda para cuando se implemente esta fase |
 
 ## Explícitamente fuera de esta fase
 

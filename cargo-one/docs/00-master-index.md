@@ -37,7 +37,8 @@ cuanto antes porque tienen tiempos de calendario largos:
 - **Registro como Trade Chain Partner + proveedor EDI ante CBSA** (para CARM) — proceso de
   aprobación gubernamental, semanas/meses. Bloquea el conector real de `integrations/carm-cbsa`
   en Fase 11, no bloquea el resto del proyecto.
-- **Registro equivalente ante CBP (ACE)** para el lado USA, si aplica al alcance de Sealion Cargo.
+- **Registro equivalente ante CBP (ACE)** para el lado USA, por cada tenant que opere del lado
+  estadounidense (empezando por Sealion Cargo, no exclusivo de ella — ver ADR-005).
 
 ## Próximo paso
 
@@ -62,8 +63,9 @@ requisitos legales externos que ningún ADR de este repo puede levantar):
    agente aplicada (`docs/phases/05-shipment.md`).
 3. **Requisito legal externo, no checkpoint de proyecto** (Fase 11, conectores de aduana):
    transmitir datos reales a CBSA/CARM o ACE/CBP requiere un customs broker licenciado con
-   delegación de autoridad — sigue pendiente que Carlos confirme si Sealion Cargo opera con
-   broker propio, partner, o planea licenciarse (pregunta de negocio, no técnica).
+   delegación de autoridad — cada tenant configura el suyo en su propio `OrganizationProfile`
+   (Fase 2, ADR-005); Sealion Cargo, como primer tenant, también necesita completar el suyo
+   antes de poder transmitir.
 
 Pendiente en paralelo (no bloquea desarrollo/documentación): ADR-001 (licencia comercial con
 Twenty.com) y el registro externo ante CBSA/CBP — ambos son trámites de terceros con tiempos
@@ -74,3 +76,9 @@ de calendario largos, vale la pena arrancarlos ya.
 "Documents, Customs e Integrations Hub") en vez de crear una fase numerada nueva — evita
 renumerar Fases 12-16 y sus referencias cruzadas. Detalle y razonamiento en
 `docs/phases/11-documents.md`.
+
+**Aclaración de producto (ADR-005):** Cargo One es multi-tenant desde el día uno — Sealion
+Cargo es el primer tenant, no el único cliente posible. Se agregó `OrganizationProfile`
+(Fase 2) para que cualquier freight forwarder que contrate el servicio configure los datos de
+su propia empresa (moneda/INCOTERMS por defecto, broker de aduana propio, branding) sin tocar
+código. Ver `docs/decisions/005-multi-tenant-product-clarification.md`.

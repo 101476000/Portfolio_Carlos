@@ -93,7 +93,7 @@ correspondiente: no calculamos nada, solo guardamos lo que CARM/ACE ya calcularo
 | `workspace_id` | UUID | Tenant |
 | `related_shipment_id` | UUID | Referencia no forzada a `Shipment` (Fase 5) — a diferencia de otras referencias cruzadas de este proyecto, esta **no es nullable**: una declaración de aduana siempre es sobre un shipment concreto |
 | `jurisdiction` | enum | `cbsa_carm`, `cbp_ace` — de qué lado de la frontera es esta declaración; un shipment que cruza ambas requiere dos `CustomsDeclaration`, no una con dos jurisdicciones mezcladas |
-| `broker_of_record_company_id` | UUID, nullable | Referencia a `Company` de Twenty con rol `customs_broker` (Fase 2) — quién presenta esto ante CBSA/CBP en nombre de Sealion Cargo/el importador. **Nullable hasta que se resuelva la pregunta de negocio abierta** (ver sección de investigación) — sin esto poblado, esta declaración no puede pasar de `draft` |
+| `broker_of_record_company_id` | UUID, nullable | Se completa por defecto desde `OrganizationProfile.customs_broker_of_record_company_id` (Fase 2) del tenant — cada tenant configura su propio arreglo de filing, esto no es una decisión única del sistema (ver ADR-005). Override por declaración solo si un caso puntual lo requiere. **Nullable hasta que el tenant configure su `OrganizationProfile`** — sin eso poblado, esta declaración no puede pasar de `draft` |
 | `cad_reference_number` | texto, nullable | Número de referencia oficial (CAD de CARM, o el entry number de ACE) — se completa solo después de una transmisión real, nunca antes |
 | `status` | enum | `draft`, `pending_broker_submission`, `submitted`, `accepted`, `rejected` — estados de **nuestro tracking**, no el state machine interno de CBSA/CBP, que no controlamos ni replicamos |
 | `submitted_at` / `decided_at` | timestamp, nullable | |
@@ -179,12 +179,14 @@ final de esta sección.
 - **Solo un customs broker licenciado, con delegación de autoridad, puede presentar un CAD o
   una corrección en nombre de un importador.** Esto es un requisito legal externo que
   determina la arquitectura real del conector: `integrations/carm-cbsa` probablemente no es
-  "Cargo One habla directo con CBSA", sino "Cargo One envía datos estructurados a un broker
-  licenciado (propio de Sealion Cargo o un partner) que los presenta". **Pregunta de negocio
-  abierta, no técnica:** ¿Sealion Cargo opera con un broker in-house, un partner externo, o
-  planea licenciarse? Esto no lo puede decidir un agente — es la única parte de esta
-  investigación que sigue necesitando una respuesta de Carlos, porque es un dato de la
-  realidad del negocio, no algo que esté en una página oficial.
+  "Cargo One habla directo con CBSA", sino "el conector envía datos estructurados al broker
+  licenciado que cada tenant tenga configurado (in-house, partner, o el que corresponda) para
+  que ese broker los presente". **Esto ya no es una pregunta de negocio única del sistema**
+  (corrección vía ADR-005, ver `docs/decisions/005-multi-tenant-product-clarification.md`):
+  Cargo One es multi-tenant, así que cada tenant configura su propio arreglo de filing en su
+  `OrganizationProfile` (Fase 2) — incluido Sealion Cargo, como cualquier otro tenant, no como
+  caso especial. Lo que sigue sin poder decidir un agente es *el valor concreto* que cada
+  tenant carga ahí (eso lo completa cada cliente al hacer onboarding), no el diseño.
 - Registro: Trade Chain Partner vía CARM Client Portal, con seguridad financiera (bond RPP —
   Release Prior to Payment). A partir del 1 de enero de 2026, el business number de un broker
   ya no puede usarse para liberar/contabilizar carga en nombre de un importador — cada
@@ -219,10 +221,11 @@ esto), no asumir que este resumen sigue vigente sin revalidar.
 
 - **Transmisión real de datos a `carm-cbsa`/`ace-cbp`** — el diseño del conector ya está
   fundamentado (arriba), pero ninguna llamada real a esos sistemas se hace sin: (1) el
-  registro externo (Trade Chain Partner/CARM, ISA/CATAIR para ACE) completado, y (2) la
-  pregunta de negocio abierta (broker propio vs. partner vs. licenciarse) resuelta por Carlos
-  — esto no es un checkpoint del proyecto, es que la arquitectura del conector literalmente
-  depende de esa respuesta.
+  registro externo (Trade Chain Partner/CARM, ISA/CATAIR para ACE) completado para el tenant
+  en cuestión, y (2) que ese tenant tenga su `OrganizationProfile.customs_filing_mode`
+  configurado (Fase 2) — esto no es un checkpoint del proyecto, es que la arquitectura del
+  conector literalmente depende de ese dato, y es por-tenant, no una respuesta única para
+  todo el sistema (ver ADR-005).
 - Clasificación arancelaria (HS code) o valuación aduanera de un embarque real — sigue
   gateado por `CLAUDE.md` regla 3 (ver la corrección hecha en esta sesión), un error ahí es
   una sanción real. `CustomsDeclarationLine.hs_code`/`value_for_duty` son campos de captura,
@@ -247,17 +250,17 @@ esto), no asumir que este resumen sigue vigente sin revalidar.
 - [x] Modelo de datos de `CustomsDeclaration`/`CustomsDeclarationLine`/`DutyAssessment`/
       `ComplianceDocument` definido, cerrando el gap de bounded context detectado — Customs ya
       no vive solo implícito en el nombre de la fase.
-- [ ] **Pregunta de negocio abierta:** ¿Sealion Cargo opera con broker propio, partner, o
-      planea licenciarse? — respuesta de Carlos, necesaria para poblar
-      `CustomsDeclaration.broker_of_record_company_id` y terminar de definir la arquitectura
-      exacta de `carm-cbsa`/`ace-cbp` (a quién le habla el conector realmente).
+- [x] `broker_of_record_company_id`/`customs_filing_mode` modelado como configuración
+      por-tenant en `OrganizationProfile` (Fase 2), no como decisión única del sistema —
+      corrección aplicada vía ADR-005.
 - [ ] `services/document-pipeline-service` implementado y verificado.
 - [ ] `services/customs-service` implementado con las migraciones correspondientes.
 - [ ] Conectores `amazon-sp-api` y `wayfair-api` implementados siguiendo el patrón "thin
       connector" (`integrations/shared/connector-interface.ts` en `PROJECT_STRUCTURE.md`).
 - [ ] Conectores `carm-cbsa`/`ace-cbp`: código real solo tras (a) registro externo confirmado
-      y (b) la pregunta de negocio de arriba resuelta — no requiere ya una revisión humana
-      adicional del diseño en sí, eso ya se investigó y quedó documentado.
+      para el tenant correspondiente y (b) ese tenant con `OrganizationProfile.customs_filing_mode`
+      configurado — no requiere ya una revisión humana adicional del diseño en sí, eso ya se
+      investigó y quedó documentado.
 - [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo para la porción Documents/Customs
       + conectores genéricos; los conectores de aduana reales pueden quedar 🟡/⛔
       indefinidamente sin que eso bloquee cerrar el resto de esta fase.
@@ -265,9 +268,10 @@ esto), no asumir que este resumen sigue vigente sin revalidar.
 ## Notas para el agente
 
 - El diseño de los conectores de aduana y del modelo de Customs ya no requiere pausar a pedir
-  revisión humana (ADR-004) — sí requiere, antes de escribir código real, resolver la
-  pregunta de negocio abierta (broker propio/partner/licenciarse) y tener el registro externo
-  confirmado. Esos dos son bloqueantes de hecho, no de política.
+  revisión humana (ADR-004) — sí requiere, antes de transmitir datos reales de un tenant
+  específico, que ese tenant tenga su registro externo confirmado y su
+  `OrganizationProfile.customs_filing_mode` configurado (ADR-005). Esos dos son bloqueantes
+  de hecho, por tenant, no de política del proyecto.
 - Bounded contexts involucrados: **Documents** (conformist, alimenta a Customs/Accounting),
   **Customs** (downstream de Shipment y de Documents, usuario del conector de Integrations
   Hub) e **Integrations Hub** (ACL genérico). `ConnectorCredential.credential_reference`

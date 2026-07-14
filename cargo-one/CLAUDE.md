@@ -6,17 +6,28 @@ antes de escribir nada.
 
 ## Qué es este proyecto
 
-Cargo One es una plataforma SaaS de freight forwarding (ocean, air, ground, rail, warehouse,
-customs) para Sealion Cargo, construida **sobre Twenty CRM** (https://github.com/twentyhq/twenty)
-como núcleo — no desde cero. Twenty provee: identidad, CRM, permisos, motor de objetos custom,
-API GraphQL/REST. El dominio logístico (shipments, containers, customs, warehouse, accounting)
-se construye como servicios satélite conectados a Twenty vía API/eventos, no forzados dentro
-de su motor de metadata.
+Cargo One es una plataforma **SaaS multi-tenant** de freight forwarding (ocean, air, ground,
+rail, warehouse, customs), construida **sobre Twenty CRM**
+(https://github.com/twentyhq/twenty) como núcleo — no desde cero. Twenty provee: identidad,
+CRM, permisos, motor de objetos custom, API GraphQL/REST. El dominio logístico (shipments,
+containers, customs, warehouse, accounting) se construye como servicios satélite conectados a
+Twenty vía API/eventos, no forzados dentro de su motor de metadata.
 
-Operador humano del proyecto: Carlos Figuera (developer único). Todo el desarrollo se ejecuta
-mediante agentes de Claude Code orquestados por él. Esto significa: los agentes deben trabajar
-en unidades acotadas y auto-contenidas, dejar todo documentado para que la siguiente sesión
-de agente (que no tendrá memoria de esta) pueda retomar sin fricción.
+**Aclaración importante de producto (no es negociable, afecta cómo se diseña todo lo
+demás):** Cargo One **no es software a medida para un solo cliente**. Sealion Cargo es la
+empresa de Carlos y el primer tenant/cliente ancla del producto, pero **cualquier freight
+forwarder que contrate el servicio debe poder crear su propio workspace y configurar los
+datos de su propia empresa ahí** — sin que eso requiera tocar código ni que un dato de un
+tenant contamine o dependa de otro. Esto ya estaba reflejado en la decisión de arquitectura
+(ver ADR-002, multi-tenancy schema-per-tenant), pero se documenta aquí de forma explícita
+porque varias fases fueron escritas asumiendo implícitamente a Sealion Cargo como si fuera
+el único cliente — ver `docs/decisions/005-multi-tenant-product-clarification.md` para el
+detalle de qué se corrigió y por qué.
+
+Operador humano del proyecto: Carlos Figuera (developer único, opera Sealion Cargo). Todo el
+desarrollo se ejecuta mediante agentes de Claude Code orquestados por él. Esto significa: los
+agentes deben trabajar en unidades acotadas y auto-contenidas, dejar todo documentado para que
+la siguiente sesión de agente (que no tendrá memoria de esta) pueda retomar sin fricción.
 
 ## Restricciones que NO se negocian
 

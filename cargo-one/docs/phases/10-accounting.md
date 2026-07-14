@@ -96,10 +96,10 @@ parte del modelo de datos.
 ## Lo que sigue sin definirse aquí (y por qué)
 
 - **Cálculo de impuestos/tasas** (GST/HST por provincia canadiense, sales tax por estado
-  en EE.UU., IVA si aplica a otras jurisdicciones de Sealion Cargo): a diferencia de Customs
-  (Fase 11), no hay una única fuente oficial que un agente pueda investigar y aplicar de forma
-  genérica — depende de dónde opera cada cliente, qué se factura, y reglas que cambian por
-  jurisdicción. Recomendación técnica (no una regla de negocio): integrar un servicio de
+  en EE.UU., IVA si aplica a otras jurisdicciones donde opere un tenant): a diferencia de
+  Customs (Fase 11), no hay una única fuente oficial que un agente pueda investigar y aplicar
+  de forma genérica — depende de dónde opera cada tenant (ver `OrganizationProfile.primary_operating_countries`,
+  Fase 2, ADR-005), qué se factura, y reglas que cambian por jurisdicción. Recomendación técnica (no una regla de negocio): integrar un servicio de
   cálculo de impuestos de terceros (ej. Avalara, TaxJar) en vez de hardcodear tasas — eso sí
   es una decisión de implementación razonable de tomar sin bloquear, pero elegir el proveedor
   específico y confirmar cobertura de jurisdicciones queda para cuando se implemente el
