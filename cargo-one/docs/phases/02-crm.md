@@ -1,8 +1,10 @@
 # Fase 2 — CRM
 
-**Estado:** 🟡 En curso — work order especificado, implementación real pendiente (ver
-"Notas para el agente": requiere una instancia de Twenty en `core/twenty/`, que todavía no
-existe en este repo).
+**Estado:** 🟡 En curso — work order especificado, `sales-extensions-app` escafoldado en
+`core/twenty-apps/sales-extensions-app/`. Implementación real pendiente: falta `yarn install`
+(bloqueado en este sandbox por red) y una instancia de Twenty corriendo vía Docker (daemon no
+disponible en este sandbox). Ver `docs/decisions/003-twenty-apps-scaffolding.md` y
+`core/twenty-apps/README.md`.
 
 ## Contexto
 
@@ -35,10 +37,10 @@ duplicado que `CLAUDE.md` pide evitar.
 | `Trade Lane` | Objeto custom nuevo (dato de referencia) | ídem | Campos: `origin_country`, `origin_port_or_city`, `destination_country`, `destination_port_or_city`. Relación many-to-many con `Company` (`primary_trade_lanes`) |
 
 Todo lo anterior se define como código versionado dentro de `sales-extensions-app`
-(`core/twenty/twenty-apps/sales-extensions-app/`) usando el Apps framework — no directamente
-por UI vía el metadata engine — para que la definición sea reproducible entre entornos
-(dev/staging/prod), consistente con que el proyecto lo mantiene un developer único vía
-agentes que no comparten memoria entre sesiones.
+(`core/twenty-apps/sales-extensions-app/`, ya escafoldado con `create-twenty-app` — ver
+ADR-003) usando el Apps framework — no directamente por UI vía el metadata engine — para que
+la definición sea reproducible entre entornos (dev/staging/prod), consistente con que el
+proyecto lo mantiene un developer único vía agentes que no comparten memoria entre sesiones.
 
 **Explícitamente fuera de esta fase:**
 - `CustomerLogisticsProfile` (INCOTERMS preferido, términos de crédito, compliance) → Fase 3.
@@ -50,10 +52,12 @@ agentes que no comparten memoria entre sesiones.
 
 ## Criterios de aceptación
 
-- [ ] `core/twenty/` existe en el repo (Twenty clonado/configurado) — **bloqueante para el
-      resto de esta lista**; hasta entonces esta fase queda en spec.
-- [ ] `sales-extensions-app` creado vía `npx create-twenty-app` con los campos/objeto de la
-      tabla de alcance definidos como código.
+- [x] `sales-extensions-app` creado vía `npx create-twenty-app` (scaffold base).
+- [ ] `yarn install` completado y `yarn twenty dev`/`yarn twenty remote:add` conectado a una
+      instancia real de Twenty — **bloqueante para el resto de esta lista**; ver
+      `core/twenty-apps/README.md` para el estado exacto del bloqueo y los comandos.
+- [ ] Campos/objeto de la tabla de alcance definidos como código dentro de
+      `sales-extensions-app` y sincronizados contra esa instancia.
 - [ ] Nombres de API en `snake_case` inglés, labels en Title Case inglés (convención de
       `CLAUDE.md`).
 - [ ] `Trade Lane` expuesto correctamente en GraphQL/REST (verificado con una consulta de
@@ -66,11 +70,15 @@ agentes que no comparten memoria entre sesiones.
 ## Notas para el agente
 
 - **No hay checkpoint humano obligatorio** para esta fase (ver `docs/00-master-index.md`).
-- **Bloqueante real:** no existe todavía `core/twenty/` en este repo — nadie ha clonado ni
-  configurado una instancia de Twenty. Una sesión de agente que retome esta fase debe
-  primero resolver eso (clonar Twenty, levantar el entorno de desarrollo) antes de poder
-  ejecutar los criterios de aceptación marcados arriba. Hasta entonces, esta fase queda en
-  estado 🟡 (spec lista, implementación pendiente) — no marcar 🟢 sin instancia real.
+- **Bloqueante real (actualizado):** ya no es "clonar Twenty" — se determinó (ADR-003) que
+  eso ni siquiera es necesario. El bloqueante real es (1) `yarn install` en
+  `sales-extensions-app`, que falló en este sandbox porque corepack no puede descargar el
+  binario de `yarn@4.13.0` a través del proxy saliente del entorno, y (2) no hay Docker
+  daemon disponible en este sandbox para levantar un Twenty local (`yarn twenty dev`) o
+  conectar a uno self-hosted. Una sesión futura con red completa y Docker debe correr
+  `yarn install` y luego `yarn twenty dev` / `yarn twenty remote:add` desde
+  `core/twenty-apps/sales-extensions-app/` antes de poder ejecutar el resto de los criterios
+  de aceptación. Hasta entonces, esta fase queda en 🟡 — no marcar 🟢 sin instancia real.
 - No se toca `packages/twenty-server` ni `packages/twenty-front` bajo ninguna circunstancia
   (regla 1 de `CLAUDE.md`) — todo lo de esta fase pasa por `sales-extensions-app`.
 - Bounded context involucrado: **CRM & Sales** (porción CRM). Antes de empezar, confirmar

@@ -22,13 +22,15 @@ cargo-one/
 │       └── ... (hasta 16-roadmap.md)
 │
 ├── core/
-│   └── twenty/                    # Submódulo o fork mínimo de Twenty (solo config, sin
-│                                  # tocar su código fuente — ver restricción en CLAUDE.md)
-│       ├── twenty-apps/           # Nuestras extensiones vía Apps framework
-│       │   ├── quotation-app/
-│       │   ├── sales-extensions-app/
-│       │   └── integrations-hub-app/   # El "admin de tokens" — ver Fase 11
-│       └── docker-compose.override.yml
+│   └── twenty-apps/                # Nuestras extensiones vía Apps framework. NO hay un
+│                                    # core/twenty/ con el monorepo clonado — ver ADR-003:
+│                                    # cada app es un proyecto npm independiente generado
+│                                    # con `npx create-twenty-app`, que habla con una
+│                                    # instancia de Twenty (local o self-hosted) por API.
+│       ├── README.md               # Cómo se generaron, estado, próximos pasos
+│       ├── quotation-app/          # Fase 4 (Sales)
+│       ├── sales-extensions-app/   # Fases 2-3 (CRM, Customers)
+│       └── integrations-hub-app/   # El "admin de tokens" — ver Fase 11
 │
 ├── services/                      # Dominio logístico — NestJS, fuera del core de Twenty
 │   ├── shipment-service/
@@ -57,10 +59,11 @@ cargo-one/
 
 ## Reglas de dependencia entre carpetas
 
-- `services/*` y `integrations/*` **nunca** importan código directamente de `core/twenty`.
-  Toda comunicación es vía la API pública de Twenty (REST/GraphQL) o eventos.
-- `core/twenty/twenty-apps/*` sí puede usar los SDKs oficiales de Twenty (`twenty-sdk`) porque
-  corren dentro del framework de extensión soportado.
+- `services/*` y `integrations/*` **nunca** importan código directamente de Twenty ni de sus
+  apps. Toda comunicación es vía la API pública de Twenty (REST/GraphQL) o eventos.
+- `core/twenty-apps/*` sí puede usar los SDKs oficiales de Twenty (`twenty-sdk`,
+  `twenty-client-sdk`) porque corren dentro del framework de extensión soportado
+  (`create-twenty-app`). Ver `docs/decisions/003-twenty-apps-scaffolding.md`.
 - Cada carpeta bajo `services/` corresponde a uno o más bounded contexts definidos en
   `docs/phases/01-architecture.md` (sección DDD). Si una carpeta empieza a mezclar
   responsabilidades de dos bounded contexts distintos, es señal de que hay que dividirla.

@@ -1,7 +1,8 @@
 # Fase 3 — Customers
 
 **Estado:** 🟡 En curso — work order especificado, implementación real pendiente (mismo
-bloqueante que Fase 2: requiere `core/twenty/` con Twenty configurado).
+bloqueante que Fase 2: falta `yarn install` + una instancia de Twenty corriendo vía Docker
+en `sales-extensions-app` — ver `docs/decisions/003-twenty-apps-scaffolding.md`).
 
 ## Contexto
 
@@ -66,9 +67,10 @@ Company nativo de Twenty con campos que no aplican a un `carrier` o `vendor`.
   que sí lo tienen (Accounting, Customs). Esta fase solo modela el dato; cualquier sesión
   futura que quiera agregarle lógica sobre esos campos debe releer `CLAUDE.md` regla 3 antes
   de hacerlo, no asumir que por estar "cerca" del dato ya tiene permiso de operar sobre él.
-- Mismo bloqueante que Fase 2: no existe `core/twenty/` en este repo todavía. No marcar 🟢
-  hasta que Fase 2 esté realmente implementada y verificada (no solo su spec) y este objeto
-  se haya creado contra esa instancia real.
+- Mismo bloqueante que Fase 2 (ya no es falta de `core/twenty/` — ver ADR-003 — sino
+  `yarn install`/Docker pendientes en `sales-extensions-app`). No marcar 🟢 hasta que Fase 2
+  esté realmente implementada y verificada (no solo su spec) y este objeto se haya creado
+  contra esa instancia real.
 - Bounded context involucrado: **CRM & Sales** (porción Customers). Si en el futuro un campo
   de `CustomerLogisticsProfile` empieza a necesitar lógica de negocio real (no solo
   almacenamiento), es señal de que esa lógica pertenece a otro bounded context (Accounting o
