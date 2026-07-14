@@ -9,8 +9,8 @@ su dependencia. Ver columna "Depende de".
 | # | Fase | Estado | Depende de | Agente puede trabajar solo | Notas |
 |---|------|--------|------------|------------------------------|-------|
 | 1 | Arquitectura, Twenty Analysis, DDD, Multi-tenant, Legal | 🟢 Cerrada | — | Sí (documentación) | Ver `docs/phases/01-architecture.md`. ADR-002 resuelto. Desbloquea Fases 2-5 |
-| 2 | CRM | 🔲 No iniciada | Fase 1 | Sí | Extiende objetos nativos de Twenty |
-| 3 | Customers | 🔲 No iniciada | Fase 1, 2 | Sí | |
+| 2 | CRM | 🟡 En curso | Fase 1 | Sí | Spec lista en `docs/phases/02-crm.md`. Implementación bloqueada: falta `core/twenty/` |
+| 3 | Customers | 🟡 En curso | Fase 1, 2 | Sí | Spec lista en `docs/phases/03-customers.md`. Mismo bloqueante que Fase 2 |
 | 4 | Sales | 🔲 No iniciada | Fase 1, 2, 3 | Sí | |
 | 5 | Shipment | 🔲 No iniciada | Fase 1 | Sí (con revisión de modelo de datos) | Núcleo del dominio logístico |
 | 6 | Ocean | 🔲 No iniciada | Fase 5 | Sí | |
@@ -41,10 +41,15 @@ cuanto antes porque tienen tiempos de calendario largos:
 
 ## Próximo paso
 
-Fase 1 cerrada (documentación de arquitectura, análisis de Twenty, DDD y multi-tenant en
-`docs/phases/01-architecture.md`; ADR-002 resuelto). Fases 2-4 (CRM/Customers/Sales) y Fase 5
-(Shipment) ya no están bloqueadas y pueden avanzar en paralelo, ya que ambas dependen solo de
-Fase 1 — ver orden recomendado en `README.md`.
+Fase 1 cerrada. Fases 2 (CRM) y 3 (Customers) tienen su work order completo
+(`docs/phases/02-crm.md`, `docs/phases/03-customers.md`) pero quedan en 🟡 En curso: la
+implementación real (crear los campos/objetos custom en Twenty) está bloqueada porque este
+repo todavía no tiene una instancia de Twenty en `core/twenty/`. Ese es el siguiente paso
+real antes de poder cerrar Fase 2/3: clonar y configurar Twenty, luego ejecutar los criterios
+de aceptación de cada fase contra esa instancia.
+
+Fase 4 (Sales) puede especificarse en paralelo (depende de Fase 1-3, cuyas specs ya existen),
+igual que Fase 5 (Shipment), que solo depende de Fase 1.
 
 Pendiente en paralelo (no bloquea desarrollo): ADR-001 (licencia comercial con Twenty.com)
 sigue sin resolución humana — solo bloquea Fase 14 en producción con clientes reales.
