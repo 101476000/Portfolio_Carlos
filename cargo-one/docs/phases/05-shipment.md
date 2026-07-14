@@ -51,6 +51,7 @@ schema `logistics_{workspace_uuid}` por tenant, según `docs/decisions/002-multi
 | `carrier_name` | texto | Texto libre en esta fase — el modelo estructurado de carrier/vessel/flight es de Fase 6/7/8, no se inventa aquí |
 | `requested_pickup_date` / `confirmed_pickup_date` | fecha | |
 | `status` | enum | `requested`, `confirmed`, `cancelled` |
+| `is_current` | booleano | Un shipment puede tener varias `Booking` a lo largo del tiempo (rebooking tras cancelación) — exactamente una con `is_current = true` es la vigente. Evita que la app tenga que inferir "cuál booking manda" por fecha |
 
 ### Entidad: `CargoUnit` (relación many-to-one a `Shipment`)
 
@@ -59,8 +60,8 @@ schema `logistics_{workspace_uuid}` por tenant, según `docs/decisions/002-multi
 | `id` | UUID | PK |
 | `shipment_id` | UUID | FK a `Shipment` |
 | `unit_type` | enum | `container`, `package`, `pallet`, `loose_cargo` — genérico; el tipo ISO de contenedor (Fase 6) o detalles de AWB (Fase 7) van en tablas de extensión de modo, no aquí |
-| `identifier` | texto, nullable | Número de contenedor u otro identificador físico, si ya se conoce en este punto |
-| `weight_kg` / `volume_cbm` | decimal | Unidades fijas para evitar ambigüedad de unidades entre fases |
+| `identifier` | texto, nullable | Número de contenedor u otro identificador físico, si ya se conoce en este punto. Único dentro del shipment, **no globalmente** — un número de contenedor se reutiliza entre distintos shipments a lo largo del tiempo, no es un identificador universal |
+| `weight_kg` / `volume_cbm` | decimal | Peso/volumen de esta unidad de carga individual (no el total del shipment — el total es la suma de sus `CargoUnit`, calculado en la capa de aplicación, no almacenado) |
 | `description` | texto | Descripción de la carga (no es la descripción arancelaria — eso es Fase 10-11, Customs) |
 
 ### Entidad: `Milestone` (relación many-to-one a `Shipment`)
@@ -69,18 +70,42 @@ schema `logistics_{workspace_uuid}` por tenant, según `docs/decisions/002-multi
 |---|---|---|
 | `id` | UUID | PK |
 | `shipment_id` | UUID | FK a `Shipment` |
-| `milestone_type` | enum | `booked`, `picked_up`, `departed_origin`, `arrived_destination`, `delivered`, `customs_cleared` (solo el hito, no la lógica — la lógica de despacho vive en Customs) |
+| `milestone_type` | **texto, no enum de base de datos** | Ver razonamiento abajo — deliberadamente no es un enum cerrado |
 | `occurred_at` | timestamp | |
 | `location` | texto, nullable | |
-| `source` | texto | Qué sistema/servicio reportó el hito (ej. `ocean-service`, `manual`) — trazabilidad, no lógica |
+| `source` | texto | Qué sistema/servicio reportó el hito (ej. `ocean-service`, `customs-service`, `manual`) — trazabilidad, no lógica |
 
-### Value Object: `Party` (relación many-to-one a `Shipment`, no es tabla separada de negocio — referencia pura)
+**Por qué `milestone_type` no es un enum cerrado (corrección de autorevisión):** la primera
+versión de este documento lo definía como enum con un valor `customs_cleared` incluido
+directamente en el shared kernel. Eso es un error de bounded context: obliga a migrar
+`Shipment` (que Fases 6-11 heredan) cada vez que Customs, Warehouse o cualquier fase futura
+necesite registrar un tipo de hito nuevo — exactamente lo que la sección "Por qué esta fase
+pide revisión de modelo de datos" advierte que hay que evitar. En su lugar:
+- `milestone_type` es texto libre, validado en la capa de aplicación, no en el schema.
+- El **núcleo genérico** que sí pertenece a esta fase (mode-agnóstico): `booked`, `picked_up`,
+  `departed_origin`, `arrived_destination`, `delivered`.
+- Cualquier otro contexto (Customs, Warehouse, Ocean/Air/Ground) usa su propio namespace al
+  emitir milestones — ej. `customs.cleared`, `warehouse.received` — sin tocar esta tabla ni
+  este documento.
+
+### Entidad: `Party` (relación many-to-one a `Shipment`)
+
+**Corrección de autorevisión:** la primera versión llamaba a esto "Value Object", pero un VO
+no tiene identidad propia ni cardinalidad múltiple direccionable — esto sí la tiene (varias
+filas por shipment, cada una editable/eliminable independientemente), así que es una Entidad
+dentro del agregado, no un VO. Se corrige también la falta de PK.
 
 | Campo | Tipo | Notas |
 |---|---|---|
+| `id` | UUID | PK (faltaba en la versión anterior) |
 | `shipment_id` | UUID | FK a `Shipment` |
 | `role` | enum | `shipper`, `consignee`, `notify_party`, `forwarder_agent` |
 | `company_id` o `person_id` | UUID | Referencia a Twenty (`Company`/`Person`) — ACL, nunca se copian nombre/dirección/etc. localmente; si se necesita mostrarlos, se consultan a la API de Twenty en el momento |
+
+**Cardinalidad por rol** (regla de aplicación, no de schema): a lo sumo un `shipper` y a lo
+sumo un `consignee` por shipment; `notify_party` y `forwarder_agent` pueden repetirse. No se
+modela como constraint de base de datos en esta fase — se valida en el servicio, para no
+atarse a una regla de negocio que podría tener excepciones no anticipadas.
 
 ## Integración
 
@@ -98,6 +123,11 @@ schema `logistics_{workspace_uuid}` por tenant, según `docs/decisions/002-multi
 - **Emite** (contrato documentado, publisher no implementado hasta que exista consumidor
   real en Fase 6-11): `shipment.created`, `shipment.milestone.recorded` — mismo envelope de
   `docs/phases/01-architecture.md` sección 4.
+- **Creación manual (spot booking):** además de reaccionar a `quotation.accepted`, el
+  servicio expone una vía de creación directa (API) para shipments sin cotización previa —
+  mismo conjunto de campos obligatorios en `Shipment` (`transport_mode`,
+  `customer_company_id`; `quotation_id`/`trade_lane_id` quedan `null`, `incoterm` se captura
+  a mano). No es un flujo distinto en el modelo, solo un origen distinto del mismo agregado.
 
 ## Alcance de esta fase
 
@@ -133,6 +163,27 @@ salientes (documentados, no implementados).
       verificado con un evento de prueba.
 - [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo cuando el código exista y esté
       verificado, no solo el modelo.
+
+## Autorevisión (agente, no reemplaza revisión humana)
+
+Antes de continuar a Fase 6-8, el mismo agente que escribió este modelo lo revisó
+críticamente y corrigió cuatro problemas reales encontrados (detalle inline en cada sección):
+
+1. `Milestone.milestone_type` era un enum cerrado con un valor (`customs_cleared`) que
+   pertenece al vocabulario de Customs, no de Shipment — violaba el límite de bounded
+   context que esta misma fase pide respetar. Corregido a texto abierto con un núcleo
+   mode-agnóstico sugerido.
+2. `Party` estaba mal clasificado como Value Object teniendo identidad y cardinalidad propia
+   — corregido a Entidad, y se le agregó el PK que le faltaba.
+3. `Booking` no distinguía cuál registro es el vigente cuando hay rebooking — se agregó
+   `is_current`.
+4. El flujo de creación manual/spot (sin `Quotation` previa) estaba mencionado como posible
+   (`quotation_id` nullable) pero no descrito como camino de integración — se agregó.
+
+Esto **no sustituye** la revisión humana que esta fase sigue pidiendo (ver criterios de
+aceptación) — es la revisión que un agente puede hacer solo, no la que requiere criterio de
+negocio de Carlos (ej. si `notify_party` debería poder repetirse, o si hace falta un quinto
+rol de `Party` que el agente no tiene forma de saber sin preguntarle).
 
 ## Notas para el agente
 
