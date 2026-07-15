@@ -38,10 +38,10 @@ y Fase 3 con `CustomerLogisticsProfile`). Ese pedazo faltaba — se agrega abajo
 
 | Elemento | Tipo | Dónde vive | Descripción |
 |---|---|---|---|
-| `company_role` | Campo custom (multi-select) en `Company` | Twenty, vía `sales-extensions-app` (Apps framework) | Valores: `shipper`, `consignee`, `carrier`, `customs_broker`, `partner_agent`, `vendor`. Una Company puede tener más de un rol (ej. un cliente que también es agente en otro país) |
-| `tax_id` | Campo custom (texto) en `Company` | ídem | Identificador fiscal del país de operación (formato libre en esta fase — validación por país queda fuera, no se inventa regla de compliance sin documentarla) |
-| `industry_vertical` | Campo custom (select) en `Company` | ídem | Clasificación comercial simple (ej. `retail`, `manufacturing`, `automotive`) para reporting, no para lógica de negocio |
-| `contact_role` | Campo custom (multi-select) en `Person` | ídem | Valores: `primary`, `operations`, `billing`, `customs` — de qué trata cada contacto dentro de una Company |
+| `company_role` (API real: `companyRole`, ✅ implementado) | Campo custom (multi-select) en `Company` | Twenty, vía `sales-extensions-app` (Apps framework) | Valores reales (UPPER_CASE, validado contra el servidor): `SHIPPER`, `CONSIGNEE`, `CARRIER`, `CUSTOMS_BROKER`, `PARTNER_AGENT`, `VENDOR`. Una Company puede tener más de un rol (ej. un cliente que también es agente en otro país) |
+| `tax_id` (API real: `taxId`) | Campo custom (texto) en `Company` | ídem | Identificador fiscal del país de operación (formato libre en esta fase — validación por país queda fuera, no se inventa regla de compliance sin documentarla) |
+| `industry_vertical` (API real: `industryVertical`) | Campo custom (select) en `Company` | ídem | Valores UPPER_CASE: `RETAIL`, `MANUFACTURING`, `AUTOMOTIVE` — clasificación comercial simple para reporting, no para lógica de negocio |
+| `contact_role` (API real: `contactRole`) | Campo custom (multi-select) en `Person` | ídem | Valores UPPER_CASE: `PRIMARY`, `OPERATIONS`, `BILLING`, `CUSTOMS` — de qué trata cada contacto dentro de una Company |
 | `Trade Lane` | Objeto custom nuevo (dato de referencia) | ídem | Campos: `origin_country`, `origin_port_or_city`, `destination_country`, `destination_port_or_city`. Relación many-to-many con `Company` (`primary_trade_lanes`) |
 | `OrganizationProfile` | Objeto custom nuevo, **singleton por workspace** (una sola fila por tenant) | ídem | Configuración de la propia empresa del tenant — ver tabla de campos abajo |
 
@@ -56,7 +56,7 @@ y Fase 3 con `CustomerLogisticsProfile`). Ese pedazo faltaba — se agrega abajo
 | `default_incoterms` | texto (mismo catálogo de Fase 3) | Default de la empresa, distinto del `preferred_incoterms` por cliente de `CustomerLogisticsProfile` (Fase 3) — ese es por cliente del tenant, este es el default general del tenant cuando no hay uno más específico |
 | `primary_operating_countries` | texto[] (ISO 3166-1 alpha-2) | En qué países opera este tenant — informativo, no dispara reglas de compliance por sí solo |
 | `logo_reference` | texto, nullable | Referencia al logo del tenant para documentos/cotizaciones/facturas generados por la plataforma (branding propio, no el de Cargo One) |
-| `customs_filing_mode` | enum | `own_licensed_broker`, `partner_broker`, `not_configured` — **reemplaza** el enfoque anterior de tratar esto como una pregunta única para todo el sistema (ver corrección en Fase 11): cada tenant configura lo suyo aquí |
+| `customs_filing_mode` (API real: `customsFilingMode`) | enum | Valores UPPER_CASE: `OWN_LICENSED_BROKER`, `PARTNER_BROKER`, `NOT_CONFIGURED` — **reemplaza** el enfoque anterior de tratar esto como una pregunta única para todo el sistema (ver corrección en Fase 11): cada tenant configura lo suyo aquí |
 | `customs_broker_of_record_company_id` | UUID, nullable | Si `customs_filing_mode != not_configured`, referencia a la `Company` (rol `customs_broker`, puede ser una Company del propio tenant si tiene broker in-house) que presenta CADs/entries en su nombre |
 
 **Por qué singleton y no una fila más de `Company`:** el tenant no es "un cliente más" del
@@ -125,6 +125,27 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
   `apply` para aplicarlo contra el remote activo. `remote:add` NO acepta un flag
   `--authentication-method` (error real encontrado en esta sesión) — solo `--as`, `--url`,
   `--api-key`, `--local`.
+- **Receta real para crear un campo `SELECT`/`MULTI_SELECT` (probada de punta a punta con
+  `company_role`, no teórica):**
+  1. `yarn twenty dev:add field` (wizard interactivo) — pero el wizard **no pide las
+     opciones** y deja `objectUniversalIdentifier: 'fill-later'` como placeholder sin
+     resolver. No confiar en que el wizard termina el trabajo solo.
+  2. Editar el archivo generado en `src/fields/<nombre>.ts` a mano:
+     - Import: `import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';`
+     - `objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier`
+       (u otro objeto estándar — no hardcodear el UUID a mano, usar esta constante).
+     - `name` en camelCase alfanumérico puro (`companyRole`, no `company-role` ni
+       `company_role`) — el servidor rechaza guiones/underscores acá.
+     - `options: [{ value: 'SHIPPER', label: 'Shipper', position: 0, color: 'blue' }, ...]`
+       — cada opción es un `FieldMetadataComplexOption`: `value` (UPPER_CASE snake_case),
+       `label`, `position` (entero), `color` (`TagColor`: `red|ruby|crimson|tomato|orange|
+       amber|yellow|lime|grass|green|jade|mint|turquoise|cyan|sky|blue|iris|violet|purple|
+       plum|pink|bronze|gold|brown|gray`), `id` opcional.
+  3. `yarn twenty dev:typecheck` para validar TypeScript.
+  4. `yarn twenty plan` para validar contra el servidor real **antes** de aplicar — acá
+     aparecen los errores de convención (`name` inválido, `value` en minúscula) que el
+     typecheck no detecta porque son reglas del servidor, no del tipo TypeScript.
+  5. `yarn twenty apply` recién cuando `plan` da 0 errores.
 - No se toca `packages/twenty-server` ni `packages/twenty-front` bajo ninguna circunstancia
   (regla 1 de `CLAUDE.md`) — todo lo de esta fase pasa por `sales-extensions-app`.
 - Bounded context involucrado: **CRM & Sales** (porción CRM). Antes de empezar, confirmar

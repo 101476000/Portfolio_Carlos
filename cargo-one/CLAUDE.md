@@ -124,7 +124,16 @@ la siguiente sesión de agente (que no tendrá memoria de esta) pueda retomar si
   quien mantenga el proyecto no tenga que cambiar de paradigma entre núcleo y satélites).
 - Comunicación núcleo↔satélites: eventos vía Redis/BullMQ + webhooks/API REST/GraphQL,
   nunca acceso directo a la base de datos de Twenty desde un servicio externo.
-- Nombres de objetos/campos custom en Twenty: inglés, snake_case en API, Title Case en labels.
+- **Nombres de campos/objetos custom en Twenty (corregido contra el servidor real, no
+  asumido):** `name` en **camelCase**, no snake_case — el servidor de Twenty rechaza
+  guiones/underscores en el `name` de un `FieldMetadata` ("must start with lowercase letter
+  and contain only alphanumeric letters"). Labels en Title Case ("Company Role"). Valores de
+  opciones de `SELECT`/`MULTI_SELECT` en **UPPER_CASE** snake_case (ej. `CUSTOMS_BROKER`), no
+  minúsculas — también rechazado por el servidor si no. Esta regla se descubrió recién en la
+  sesión que implementó el primer campo real (`company_role` → `companyRole` en
+  `sales-extensions-app`, Fase 2) — antes de eso, la documentación de fases (2, 3, 4) tenía
+  los valores de opciones en minúscula; se están corrigiendo a medida que se implementa cada
+  campo, no todas de una vez.
 - Comentarios y documentación de negocio (docs/, ADRs): español. Código y nombres técnicos: inglés.
 
 ## Stack de referencia (heredado del análisis de Twenty)

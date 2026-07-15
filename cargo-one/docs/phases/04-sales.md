@@ -26,13 +26,13 @@ Shipment").
 | Elemento | Tipo | Dónde vive | Descripción |
 |---|---|---|---|
 | `Quotation` | Objeto custom nuevo (agregado raíz de esta fase) | Twenty, vía `quotation-app` | Relación 1:1 con `Opportunity` nativo de Twenty (no reemplaza su pipeline, lo complementa) |
-| `quotation_number` | Campo (texto, único) en `Quotation` | ídem | Identificador legible para el cliente (formato a definir en implementación, ej. secuencial por workspace) |
-| `status` | Campo (select) en `Quotation` | ídem | `draft`, `sent`, `accepted`, `rejected`, `expired`, `superseded` — máquina de estados simple, sin lógica de negocio automática en esta fase |
-| `valid_until` | Campo (fecha) en `Quotation` | ídem | Vigencia de la cotización |
-| `transport_mode` | Campo (select) en `Quotation` | ídem | `ocean`, `air`, `ground`, `multimodal` — anticipa Fases 6-8, no las implementa |
-| `trade_lane` | Relación a `Trade Lane` (Fase 2) | ídem | Reutiliza el dato de referencia de Fase 2, no lo duplica |
+| `quotation_number` (API real: `quotationNumber`) | Campo (texto, único) en `Quotation` | ídem | Identificador legible para el cliente (formato a definir en implementación, ej. secuencial por workspace) |
+| `status` | Campo (select) en `Quotation` | ídem | Valores UPPER_CASE (convención real de Twenty, ver Fase 2/`CLAUDE.md`): `DRAFT`, `SENT`, `ACCEPTED`, `REJECTED`, `EXPIRED`, `SUPERSEDED` — máquina de estados simple, sin lógica de negocio automática en esta fase |
+| `valid_until` (API real: `validUntil`) | Campo (fecha) en `Quotation` | ídem | Vigencia de la cotización |
+| `transport_mode` (API real: `transportMode`) | Campo (select) en `Quotation` | ídem | Valores UPPER_CASE: `OCEAN`, `AIR`, `GROUND`, `MULTIMODAL` — anticipa Fases 6-8, no las implementa |
+| `trade_lane` (API real: `tradeLane`) | Relación a `Trade Lane` (Fase 2) | ídem | Reutiliza el dato de referencia de Fase 2, no lo duplica |
 | `incoterm` | Campo (select, mismo catálogo que Fase 3) en `Quotation` | ídem | Por defecto toma `preferred_incoterms` de `CustomerLogisticsProfile` (Fase 3) si existe, pero es editable por cotización — una cotización puntual puede pactar un INCOTERM distinto al preferido del cliente |
-| `QuotationLine` | Objeto custom hijo (relación many-to-one a `Quotation`) | ídem | Campos: `charge_code` (texto), `description`, `unit_type` (ej. `per_container`, `per_kg`, `flat`), `quantity`, `unit_price`, `currency` (ISO 4217), `amount` |
+| `QuotationLine` | Objeto custom hijo (relación many-to-one a `Quotation`) | ídem | Campos (API real en camelCase): `chargeCode` (texto), `description`, `unitType` (select, valores UPPER_CASE ej. `PER_CONTAINER`, `PER_KG`, `FLAT`), `quantity`, `unitPrice`, `currency` (ISO 4217), `amount` |
 | `total_amount` | Campo calculado/almacenado en `Quotation` | ídem | Suma de `amount` de sus `QuotationLine` — aritmética simple de visualización, no lógica de facturación |
 
 **Explícitamente fuera de esta fase:**
@@ -73,8 +73,13 @@ Shipment").
   fase solo modela y muestra el dato, no lo factura ni lo concilia. Cualquier sesión que
   quiera conectar `Quotation` a un flujo de facturación real debe releer `CLAUDE.md` regla 3
   antes de tocar eso.
-- Mismo bloqueante técnico que Fase 2/3: `yarn install`/Docker pendientes en `quotation-app`
-  (ver `core/twenty-apps/README.md`). No marcar 🟢 sin instancia real.
+- El bloqueante de infraestructura de Fase 2 (`yarn install`/Docker) ya se resolvió en un VPS
+  real (ver `docs/phases/02-crm.md` y `docs/phases/14-deployment.md`) — `quotation-app`
+  todavía no repitió ese proceso ahí, pero el camino ya está probado. Al implementar esta
+  fase, seguir la "receta real" documentada en Fase 2 (`dev:add` → completar
+  `objectUniversalIdentifier` con `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`/el identificador del
+  objeto `Quotation` propio de esta app → `name` camelCase → `options` en UPPER_CASE →
+  `plan` → `apply`), no reinventar el proceso desde cero.
 - **Contrato de evento para Fase 5 (documentado, no implementado):** cuando `Quotation.status`
   pase a `accepted`, el evento a emitir sigue el envelope de
   `docs/phases/01-architecture.md` sección 4:
