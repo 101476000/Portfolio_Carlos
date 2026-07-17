@@ -42,7 +42,7 @@ y Fase 3 con `CustomerLogisticsProfile`). Ese pedazo faltaba — se agrega abajo
 | `tax_id` (API real: `taxId`) | Campo custom (texto) en `Company` | ídem | Identificador fiscal del país de operación (formato libre en esta fase — validación por país queda fuera, no se inventa regla de compliance sin documentarla) |
 | `industry_vertical` (API real: `industryVertical`) | Campo custom (select) en `Company` | ídem | Valores UPPER_CASE: `RETAIL`, `MANUFACTURING`, `AUTOMOTIVE` — clasificación comercial simple para reporting, no para lógica de negocio |
 | `contact_role` (API real: `contactRole`) | Campo custom (multi-select) en `Person` | ídem | Valores UPPER_CASE: `PRIMARY`, `OPERATIONS`, `BILLING`, `CUSTOMS` — de qué trata cada contacto dentro de una Company |
-| `Trade Lane` | Objeto custom nuevo (dato de referencia) | ídem | Campos: `origin_country`, `origin_port_or_city`, `destination_country`, `destination_port_or_city`. Relación many-to-many con `Company` (`primary_trade_lanes`) |
+| `Trade Lane` (✅ implementado) | Objeto custom nuevo (dato de referencia) | ídem | Campos (API real): `originCountry`, `originPortOrCity`, `destinationCountry`, `destinationPortOrCity`. Vínculo con `Company` **corregido**: el SDK no tiene `MANY_TO_MANY` directo (solo `MANY_TO_ONE`/`ONE_TO_MANY`) — se implementó vía objeto pivote `CompanyTradeLane` con dos relaciones `MANY_TO_ONE` (a `Company` y a `Trade Lane`), cada una con su recíproco `ONE_TO_MANY`. Ver "Notas para el agente" para la receta completa |
 | `OrganizationProfile` | Objeto custom nuevo, **singleton por workspace** (una sola fila por tenant) | ídem | Configuración de la propia empresa del tenant — ver tabla de campos abajo |
 
 ### `OrganizationProfile` — la empresa del tenant, no la de sus clientes
@@ -98,8 +98,11 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
       **este es el único criterio pendiente para cerrar la fase.**
 - [ ] Nombres de API en `snake_case` inglés, labels en Title Case inglés (convención de
       `CLAUDE.md`).
-- [ ] `Trade Lane` expuesto correctamente en GraphQL/REST (verificado con una consulta de
-      prueba contra el workspace de desarrollo).
+- [x] `Trade Lane` creado (4 campos propios + objeto pivote `CompanyTradeLane` con relación
+      a `Company`), verificado en Configuración → Modelo de datos de la instancia real
+      (los 4 campos de relación confirmados presentes, no solo por el diff de `plan`).
+- [ ] `company_role`/`tax_id`/`industry_vertical`/`contact_role`/`Trade Lane` ✅ implementados.
+      Falta únicamente `OrganizationProfile` para cerrar esta fase.
 - [ ] `OrganizationProfile` verificado como singleton real (no permite dos filas en el mismo
       workspace) — regla de aplicación, documentar cómo se hizo cumplir al implementar.
 - [ ] No se duplicó ningún campo que ya exista nativo en Twenty (Company/Person) — confirmado
@@ -146,6 +149,35 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
      aparecen los errores de convención (`name` inválido, `value` en minúscula) que el
      typecheck no detecta porque son reglas del servidor, no del tipo TypeScript.
   5. `yarn twenty apply` recién cuando `plan` da 0 errores.
+- **Receta real para relaciones (probada de punta a punta con `Trade Lane` ↔ `Company`):**
+  - El SDK **no tiene `MANY_TO_MANY`** — el enum `RelationType` solo tiene `MANY_TO_ONE` y
+    `ONE_TO_MANY` (confirmado en `node_modules/twenty-sdk/dist/define/index.d.ts`). Para una
+    relación many-to-many real hace falta un **objeto pivote** con dos relaciones
+    `MANY_TO_ONE` (una a cada objeto que se quiere vincular).
+  - Cada campo `RELATION` necesita `relationTargetObjectMetadataUniversalIdentifier` (el
+    objeto al que apunta) y `relationTargetFieldMetadataUniversalIdentifier` (el campo
+    recíproco del otro lado) — **los dos campos de un par recíproco se referencian
+    mutuamente**, así que hay que generar los UUIDs de ambos lados *antes* de escribir
+    cualquiera de los dos archivos. El emparejamiento correcto es: el campo A
+    (`MANY_TO_ONE` hacia objeto X) reciproca con el campo B que **vive en X** — no con
+    cualquier otro campo. Cruzar el emparejamiento produce una relación lógicamente rota
+    (se detectó y corrigió este error concreto en esta sesión antes de aplicar).
+  - Para un objeto **estándar** de Twenty (Company, Person), el campo de relación va en un
+    archivo nuevo en `src/fields/`, igual que cualquier otro campo custom sobre ese objeto.
+  - Para un objeto **propio** (ej. `Trade Lane`, `CompanyTradeLane`), el campo va **inline**
+    en el array `fields: [...]` del propio archivo `src/objects/<objeto>.ts` — no como
+    archivo separado.
+  - `yarn twenty plan` puede mostrar **menos entradas de las esperadas** para un par de
+    campos recíprocos (ej. mostrar solo 1 de 2) — esto se verificó empíricamente que es
+    comportamiento normal del diff (probablemente trata el par como una sola relación
+    física a efectos de visualización), no un bug que vaya a dejar la relación a medio
+    crear. **No asumir esto sin verificar**: después de `apply`, confirmar en
+    Configuración → Modelo de datos de Twenty que ambos lados existen de verdad, en vez de
+    confiar solo en el conteo del `plan`.
+  - Un objeto pivote técnico (solo de vinculación, no algo que el usuario navegue
+    directamente) no necesita vista/navegación/layout automáticos — declinar esa opción del
+    wizard (`n`) para no ensuciar la navegación principal, consistente con el principio de
+    UX de `CLAUDE.md`.
 - No se toca `packages/twenty-server` ni `packages/twenty-front` bajo ninguna circunstancia
   (regla 1 de `CLAUDE.md`) — todo lo de esta fase pasa por `sales-extensions-app`.
 - Bounded context involucrado: **CRM & Sales** (porción CRM). Antes de empezar, confirmar
