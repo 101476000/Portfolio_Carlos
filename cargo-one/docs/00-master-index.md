@@ -9,7 +9,7 @@ su dependencia. Ver columna "Depende de".
 | # | Fase | Estado | Depende de | Agente puede trabajar solo | Notas |
 |---|------|--------|------------|------------------------------|-------|
 | 1 | Arquitectura, Twenty Analysis, DDD, Multi-tenant, Legal | 🟢 Cerrada | — | Sí (documentación) | Ver `docs/phases/01-architecture.md`. ADR-002 resuelto. Desbloquea Fases 2-5 |
-| 2 | CRM | 🟡 En curso | Fase 1 | Sí | 5 de 6 elementos implementados y aplicados en Twenty real (`companyRole`, `taxId`, `industryVertical`, `contactRole`, `Trade Lane`+pivote). Falta solo `OrganizationProfile` |
+| 2 | CRM | 🟢 Cerrada | Fase 1 | Sí | **Primera fase con código implementado y verificado**, no solo especificado — los 6 elementos (`companyRole`, `taxId`, `industryVertical`, `contactRole`, `Trade Lane`+pivote, `OrganizationProfile`) aplicados y confirmados en Twenty real. Enforcement de singleton en `OrganizationProfile` queda pendiente (no bloquea) |
 | 3 | Customers | 🟡 En curso | Fase 1, 2 | Sí | Spec lista en `docs/phases/03-customers.md`. Mismo bloqueante que Fase 2 |
 | 4 | Sales | 🟡 En curso | Fase 1, 2, 3 | Sí | Spec lista, app `quotation-app` escafoldada. Mismo bloqueante que Fase 2/3 |
 | 5 | Shipment | 🟡 En curso | Fase 1 | Sí (con revisión de modelo de datos) | Modelo de datos listo en `docs/phases/05-shipment.md`; `services/shipment-service` sin código todavía |
@@ -49,19 +49,20 @@ fundamentados en fuentes oficiales en vez de bloqueados — ver `docs/phases/11-
 Ninguna fase tiene código de servicio implementado todavía. Para la narrativa completa, ver
 `docs/phases/16-roadmap.md`.
 
-Bloqueos reales que quedan (ya no son de "falta revisión humana", son de infraestructura o de
-requisitos legales externos que ningún ADR de este repo puede levantar):
+**Infraestructura de desarrollo: resuelta.** El bloqueo de `yarn install`/Docker que afectaba
+Fases 2-4 y la porción genérica de Fase 11 se resolvió con un VPS real (Hostinger KVM 2, ver
+Fase 14) — accesible por SSH/terminal del panel, con Node 24 + Docker corriendo. Fase 2 ya
+está 🟢 Cerrada implementada ahí de punta a punta (primera fase con código real, no solo
+spec). Fases 3, 4, y la porción genérica de Fase 11 pueden seguir el mismo camino ya probado
+(mismo VPS, misma receta documentada en Fase 2).
 
-1. **Infraestructura de desarrollo** (`core/twenty-apps/`): falta `yarn install` + Docker en
-   un entorno con red completa. Carlos indicó que no lo hará en su máquina local — pendiente
-   definir dónde (ej. un VPS de Hostinger u otro proveedor); requiere que una sesión de agente
-   tenga acceso (SSH u otro medio) a ese entorno para completarlo. Bloquea pasar de spec a
-   código en Fases 2-4 y la porción genérica de Fase 11.
-2. **Revisión humana del core domain** (Fases 5-9, `Shipment` + Ocean/Air/Ground/Warehouse):
+Bloqueos reales que quedan (de infraestructura humana/legal, no de código):
+
+1. **Revisión humana del core domain** (Fases 5-9, `Shipment` + Ocean/Air/Ground/Warehouse):
    sigue teniendo su propia recomendación de revisión (no un checkpoint de `CLAUDE.md`, sino
    buena práctica dado que seis fases dependen de este modelo) — ya tiene una autorevisión de
    agente aplicada (`docs/phases/05-shipment.md`).
-3. **Requisito legal externo, no checkpoint de proyecto** (Fase 11, conectores de aduana):
+2. **Requisito legal externo, no checkpoint de proyecto** (Fase 11, conectores de aduana):
    transmitir datos reales a CBSA/CARM o ACE/CBP requiere un customs broker licenciado con
    delegación de autoridad — cada tenant configura el suyo en su propio `OrganizationProfile`
    (Fase 2, ADR-005); Sealion Cargo, como primer tenant, también necesita completar el suyo

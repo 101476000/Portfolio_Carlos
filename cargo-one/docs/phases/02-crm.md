@@ -1,11 +1,12 @@
 # Fase 2 — CRM
 
-**Estado:** 🟡 En curso — **bloqueante de infraestructura resuelto**: `sales-extensions-app`
-tiene `yarn install` completo y está conectado (`remote:add`, auth por API key válida) a una
-instancia real de Twenty self-hosted (VPS de desarrollo, Fase 14). Falta implementar los
-campos/objetos de la tabla de alcance como código y sincronizarlos — eso es lo único que
-queda para cerrar esta fase. Ver `docs/decisions/003-twenty-apps-scaffolding.md`,
-`docs/phases/14-deployment.md`, y `core/twenty-apps/README.md`.
+**Estado:** 🟢 Cerrada — los 6 elementos de la tabla de alcance (`company_role`, `tax_id`,
+`industry_vertical`, `contact_role`, `Trade Lane`, `OrganizationProfile`) están implementados
+y verificados contra la instancia real de Twenty self-hosted (VPS de desarrollo, Fase 14), no
+solo especificados. Único punto que queda deliberadamente abierto: la enforcement real de
+`OrganizationProfile` como singleton (ver "Notas para el agente" — no bloquea el cierre,
+requiere un `logicFunction` que es trabajo de una sesión futura). Ver
+`docs/decisions/003-twenty-apps-scaffolding.md`, `docs/phases/14-deployment.md`.
 
 ## Contexto
 
@@ -43,21 +44,21 @@ y Fase 3 con `CustomerLogisticsProfile`). Ese pedazo faltaba — se agrega abajo
 | `industry_vertical` (API real: `industryVertical`) | Campo custom (select) en `Company` | ídem | Valores UPPER_CASE: `RETAIL`, `MANUFACTURING`, `AUTOMOTIVE` — clasificación comercial simple para reporting, no para lógica de negocio |
 | `contact_role` (API real: `contactRole`) | Campo custom (multi-select) en `Person` | ídem | Valores UPPER_CASE: `PRIMARY`, `OPERATIONS`, `BILLING`, `CUSTOMS` — de qué trata cada contacto dentro de una Company |
 | `Trade Lane` (✅ implementado) | Objeto custom nuevo (dato de referencia) | ídem | Campos (API real): `originCountry`, `originPortOrCity`, `destinationCountry`, `destinationPortOrCity`. Vínculo con `Company` **corregido**: el SDK no tiene `MANY_TO_MANY` directo (solo `MANY_TO_ONE`/`ONE_TO_MANY`) — se implementó vía objeto pivote `CompanyTradeLane` con dos relaciones `MANY_TO_ONE` (a `Company` y a `Trade Lane`), cada una con su recíproco `ONE_TO_MANY`. Ver "Notas para el agente" para la receta completa |
-| `OrganizationProfile` | Objeto custom nuevo, **singleton por workspace** (una sola fila por tenant) | ídem | Configuración de la propia empresa del tenant — ver tabla de campos abajo |
+| `OrganizationProfile` (✅ implementado) | Objeto custom nuevo, **singleton por workspace** (una sola fila por tenant — enforcement real pendiente, ver "Notas para el agente") | ídem | Configuración de la propia empresa del tenant — ver tabla de campos abajo |
 
 ### `OrganizationProfile` — la empresa del tenant, no la de sus clientes
 
 | Campo | Tipo | Notas |
 |---|---|---|
-| `legal_name` | texto | Razón social del tenant (ej. "Sealion Cargo Inc.") |
-| `trade_name` | texto, nullable | Nombre comercial si difiere del legal |
-| `tax_id` / `business_number` | texto | Identificador fiscal/de negocio del tenant — mismo criterio que `Company.tax_id`: sin validación por país en esta fase |
-| `default_currency` | texto (ISO 4217) | Moneda por defecto para `Quotation`/`Invoice` de este tenant — evita que cada cotización tenga que preguntarlo |
-| `default_incoterms` | texto (mismo catálogo de Fase 3) | Default de la empresa, distinto del `preferred_incoterms` por cliente de `CustomerLogisticsProfile` (Fase 3) — ese es por cliente del tenant, este es el default general del tenant cuando no hay uno más específico |
-| `primary_operating_countries` | texto[] (ISO 3166-1 alpha-2) | En qué países opera este tenant — informativo, no dispara reglas de compliance por sí solo |
-| `logo_reference` | texto, nullable | Referencia al logo del tenant para documentos/cotizaciones/facturas generados por la plataforma (branding propio, no el de Cargo One) |
-| `customs_filing_mode` (API real: `customsFilingMode`) | enum | Valores UPPER_CASE: `OWN_LICENSED_BROKER`, `PARTNER_BROKER`, `NOT_CONFIGURED` — **reemplaza** el enfoque anterior de tratar esto como una pregunta única para todo el sistema (ver corrección en Fase 11): cada tenant configura lo suyo aquí |
-| `customs_broker_of_record_company_id` | UUID, nullable | Si `customs_filing_mode != not_configured`, referencia a la `Company` (rol `customs_broker`, puede ser una Company del propio tenant si tiene broker in-house) que presenta CADs/entries en su nombre |
+| `legal_name` (API real: `legalName`) | texto | Razón social del tenant (ej. "Sealion Cargo Inc.") |
+| `trade_name` (API real: `tradeName`) | texto, nullable | Nombre comercial si difiere del legal |
+| `tax_id` (API real: `taxId`) | texto | Identificador fiscal/de negocio del tenant — mismo criterio que `Company.taxId`: sin validación por país en esta fase |
+| `default_currency` (API real: `defaultCurrency`) | texto (ISO 4217) | Moneda por defecto para `Quotation`/`Invoice` de este tenant — evita que cada cotización tenga que preguntarlo |
+| `default_incoterms` (API real: `defaultIncoterms`) | select, valores `EXW`/`FCA`/`FOB`/`CIF`/`CPT`/`CIP`/`DAP`/`DPU`/`DDP` (mismo catálogo que Fase 3) | Default de la empresa, distinto del `preferred_incoterms` por cliente de `CustomerLogisticsProfile` (Fase 3) — ese es por cliente del tenant, este es el default general del tenant cuando no hay uno más específico |
+| `primary_operating_countries` (API real: `primaryOperatingCountries`) | texto (códigos ISO 3166-1 alpha-2 separados por coma) | En qué países opera este tenant — informativo, no dispara reglas de compliance por sí solo. Simplificación deliberada: texto libre en vez de un multi-select con ~250 países, ajustar si hace falta una UI más estructurada |
+| `logo_reference` (API real: `logoReference`) | texto, nullable | Referencia al logo del tenant para documentos/cotizaciones/facturas generados por la plataforma (branding propio, no el de Cargo One) |
+| `customs_filing_mode` (API real: `customsFilingMode`) | select, valores `OWN_LICENSED_BROKER`/`PARTNER_BROKER`/`NOT_CONFIGURED` | **Reemplaza** el enfoque anterior de tratar esto como una pregunta única para todo el sistema (ver corrección en Fase 11): cada tenant configura lo suyo aquí |
+| `customs_broker_of_record` (API real: `customsBrokerOfRecord`) | relación `MANY_TO_ONE` a `Company` | Referencia a la `Company` (rol `customs_broker`, puede ser una Company del propio tenant si tiene broker in-house) que presenta CADs/entries en su nombre. Reciprocada por `organizationProfilesAsBroker` (`ONE_TO_MANY`) en `Company` |
 
 **Por qué singleton y no una fila más de `Company`:** el tenant no es "un cliente más" del
 CRM — es el dueño del workspace. Modelarlo como una fila de `Company` con un rol especial
@@ -91,24 +92,29 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
 - [x] `sales-extensions-app` creado vía `npx create-twenty-app` (scaffold base).
 - [x] `yarn install` completado y `yarn twenty remote:add` conectado a una instancia real de
       Twenty self-hosted (`remote:status` → `Auth: api-key (valid)`) — verificado en el VPS de
-      desarrollo (Fase 14), no en el sandbox de agente donde se especificó originalmente.
-- [ ] Campos/objeto de la tabla de alcance definidos como código dentro de
-      `sales-extensions-app` (usar `yarn twenty dev:add <entityType>` para escafoldar cada
-      objeto/campo, luego `yarn twenty plan`/`apply` para sincronizar contra el remote) —
-      **este es el único criterio pendiente para cerrar la fase.**
-- [ ] Nombres de API en `snake_case` inglés, labels en Title Case inglés (convención de
-      `CLAUDE.md`).
+      desarrollo (Fase 14), no en el sandbox de agente originalmente.
+- [x] `company_role`, `tax_id`, `industry_vertical`, `contact_role` creados y verificados
+      contra el servidor real (`plan` limpio + confirmado visualmente en Configuración →
+      Modelo de datos).
+- [x] Nombres de API en camelCase alfanumérico, valores de opciones en UPPER_CASE (convención
+      real del servidor, corregida en `CLAUDE.md` durante esta implementación — no era
+      snake_case como se había asumido originalmente), labels en Title Case.
 - [x] `Trade Lane` creado (4 campos propios + objeto pivote `CompanyTradeLane` con relación
       a `Company`), verificado en Configuración → Modelo de datos de la instancia real
       (los 4 campos de relación confirmados presentes, no solo por el diff de `plan`).
-- [ ] `company_role`/`tax_id`/`industry_vertical`/`contact_role`/`Trade Lane` ✅ implementados.
-      Falta únicamente `OrganizationProfile` para cerrar esta fase.
+- [x] `OrganizationProfile` creado con sus 9 campos (incluida la relación `MANY_TO_ONE` a
+      `Company`), verificado en Configuración → Modelo de datos — ambos lados de la relación
+      (`customsBrokerOfRecord` en `OrganizationProfile`, `organizationProfilesAsBroker` en
+      `Company`) confirmados presentes.
 - [ ] `OrganizationProfile` verificado como singleton real (no permite dos filas en el mismo
-      workspace) — regla de aplicación, documentar cómo se hizo cumplir al implementar.
-- [ ] No se duplicó ningún campo que ya exista nativo en Twenty (Company/Person) — confirmado
-      contra el esquema real antes de crear campos nuevos.
-- [ ] `docs/00-master-index.md` actualizado a 🟢 Cerrada solo cuando lo anterior esté
-      verificado contra una instancia real, no solo especificado.
+      workspace) — **deliberadamente no resuelto en esta ronda**: el Apps SDK no expone una
+      opción de "objeto singleton" a nivel de metadata; enforcement real requeriría un
+      `logicFunction` (validación server-side) que es una unidad de trabajo aparte — no
+      bloquea el cierre de esta fase, queda anotado para una sesión futura.
+- [x] No se duplicó ningún campo que ya exista nativo en Twenty (Company/Person) — confirmado
+      contra el esquema real antes de crear cada campo nuevo.
+- [x] `docs/00-master-index.md` actualizado a 🟢 Cerrada — verificado contra una instancia
+      real, no solo especificado.
 
 ## Notas para el agente
 
@@ -174,6 +180,23 @@ proyecto lo mantiene un developer único vía agentes que no comparten memoria e
     crear. **No asumir esto sin verificar**: después de `apply`, confirmar en
     Configuración → Modelo de datos de Twenty que ambos lados existen de verdad, en vez de
     confiar solo en el conteo del `plan`.
+  - **La misma omisión pasa con campos simples (no solo relaciones) cuando el objeto entero
+    es nuevo:** al crear `OrganizationProfile` con 8 campos `TEXT`/`SELECT` propios más 1
+    `RELATION`, el diff de `plan` no listó ninguno de los 8 campos simples individualmente
+    (solo el `objectMetadata`, la relación, y el scaffolding estándar) — mismo patrón,
+    mismo verificado-como-no-bug: los 9 campos existían de verdad al confirmar en la UI
+    después de `apply`. Regla general: **si el objeto es nuevo en esta misma sesión de
+    `plan`/`apply`, no confiar en que el diff liste cada campo propio individualmente** —
+    verificar el archivo fuente (`cat` del objeto) está bien escrito, y verificar el
+    resultado final en la UI, no el conteo de líneas del diff.
+  - Antes de confiar en un análisis de "por qué el diff se ve así" basado en código fuente
+    de Twenty: **este VPS no tiene el código fuente de `twenty-server` ni el monorepo
+    completo de Twenty** (ver ADR-003) — solo `node_modules/twenty-sdk/dist/*` (compilado).
+    Un reporte que cite archivos `.ts` de `packages/twenty-server/src/...` con números de
+    línea específicos no puede ser una lectura real de este servidor — pasó una vez en esta
+    sesión y resultó ser información reconstruida de memoria, no evidencia real. Ante duda
+    sobre comportamiento del servidor, verificar empíricamente contra la UI real, no confiar
+    en una "investigación" de código que no puede haberse leído desde acá.
   - Un objeto pivote técnico (solo de vinculación, no algo que el usuario navegue
     directamente) no necesita vista/navegación/layout automáticos — declinar esa opción del
     wizard (`n`) para no ensuciar la navegación principal, consistente con el principio de
